@@ -1,0 +1,34 @@
+\#{ Lettre moderne : bandeau de couleur en haut de page avec le nom en blanc,
+    assortie au modele de CV moderne. }
+\BLOCK{include "_preambule.tex.j2"}
+\policesans
+\usepackage{eso-pic}
+\geometry{left=2.3cm, right=2.3cm, top=1.1cm, bottom=2.2cm}
+\hypersetup{pdftitle={\VAR{l.objet or "Lettre de motivation"} - \VAR{l.exp.nom}}, pdfauthor={\VAR{l.exp.nom}}}
+\setlength{\parskip}{9pt}
+
+% Le bandeau : un rectangle de couleur sur toute la largeur, en haut de la 1re page.
+\newlength{\hauteurbandeau}
+\setlength{\hauteurbandeau}{3.5cm}
+\AddToShipoutPictureBG*{\AtPageUpperLeft{%
+  \raisebox{-\hauteurbandeau}{\color{accent}\rule{\paperwidth}{\hauteurbandeau}}}}
+
+\begin{document}
+
+% ---------- Expéditeur (dans le bandeau) ----------
+\begin{minipage}[t][\dimexpr\hauteurbandeau-1.1cm\relax][c]{\textwidth}
+\color{white}\raggedright
+{\fontsize{23}{27}\selectfont\bfseries \VAR{l.exp.nom}\par}
+\BLOCK{if l.exp.titre}
+\vspace{3pt}{\large \VAR{l.exp.titre}\par}
+\BLOCK{endif}
+\BLOCK{if l.expediteur_ligne}
+\vspace{6pt}{\small \VAR{l.expediteur_ligne}\par}
+\BLOCK{endif}
+\end{minipage}
+
+\vspace{0.9cm}
+
+\BLOCK{include "_lettre_corps.tex.j2"}
+
+\end{document}

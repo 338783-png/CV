@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titre %}{% endblock %} · CV.express</title>
+  <meta name="description" content="{% block description %}{% endblock %}">
+  <link rel="canonical" href="{{ url_page }}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ self.titre() }}">
+  <meta property="og:description" content="{{ self.description() }}">
+  <meta property="og:url" content="{{ url_page }}">
+  <meta property="og:image" content="{{ racine }}img/modele_moderne.png">
+  {% block tete %}{% endblock %}
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="page-texte">
+
+<header class="entete entete-page">
+  <a href="/" class="logo">CV<span>.</span>express</a>
+  <a href="/creer" class="bouton principal">Créer mon CV</a>
+</header>
+
+<main class="article">
+{% block contenu %}{% endblock %}
+</main>
+
+{% include "_pied.html" %}
+</body>
+</html>

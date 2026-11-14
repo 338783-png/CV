@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titre %}Lettre de motivation : modèle et structure{% endblock %}
+{% block description %}Comment écrire une lettre de motivation pour un emploi ou un stage : présentation, plan en trois paragraphes, formules de politesse. Génère la tienne en PDF.{% endblock %}
+{% block contenu %}
+<h1>Lettre de motivation : le modèle qui marche</h1>
+<p class="chapeau">Une bonne lettre tient sur une page et répond à une seule question : pourquoi toi, pour ce poste, dans cette entreprise ? Voici la présentation attendue et le plan à suivre.</p>
+
+<h2>La présentation</h2>
+<ul>
+  <li><strong>En haut à gauche</strong> : ton nom, ton adresse, ton téléphone, ton e-mail.</li>
+  <li><strong>À droite</strong> : le nom du destinataire ou sa fonction, l'entreprise, son adresse.</li>
+  <li><strong>Le lieu et la date</strong> : « Dakar, le 14 novembre 2026 ».</li>
+  <li><strong>L'objet</strong> : « Candidature au poste de… », avec la référence de l'offre s'il y en a une.</li>
+  <li><strong>La formule d'appel</strong> : « Madame, Monsieur, », ou le nom de la personne si tu le connais.</li>
+</ul>
+
+<h2>Le plan en trois paragraphes</h2>
+<ol>
+  <li><strong>Vous</strong> : pourquoi cette entreprise et ce poste t'intéressent. Montre que tu t'es renseigné.</li>
+  <li><strong>Moi</strong> : ce que tu sais faire, avec un ou deux exemples précis tirés de ta formation ou de tes expériences.</li>
+  <li><strong>Nous</strong> : ce que tu peux apporter, et ta disponibilité pour un entretien.</li>
+</ol>
+
+<h2>Exemple de trame</h2>
+<blockquote>
+  <p>Madame, Monsieur,</p>
+  <p>Actuellement [ta situation], je vous adresse ma candidature au poste de [poste] au sein de [entreprise], dont [ce qui t'attire : activité, projet, réputation].</p>
+  <p>Au cours de [formation ou expérience], j'ai [réalisation concrète, avec un chiffre si possible]. Cette expérience m'a permis de développer [compétence utile pour le poste].</p>
+  <p>Je serais heureux de mettre ces compétences au service de votre équipe, et je me tiens à votre disposition pour un entretien.</p>
+  <p>Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.</p>
+</blockquote>
+
+<h2>Les règles à respecter</h2>
+<ul>
+  <li>Une page, pas plus. Des phrases courtes.</li>
+  <li>Une lettre par offre : ne renvoie pas la même à tout le monde.</li>
+  <li>Ne recopie pas ton CV : choisis deux exemples et développe-les.</li>
+  <li>Aucune faute. Fais relire.</li>
+  <li>Pour une demande d'emploi déposée sur place, certaines administrations demandent une lettre manuscrite : dans ce cas, sers-toi du PDF comme brouillon à recopier.</li>
+</ul>
+
+<aside class="appel">
+  <p>Le générateur met ta lettre en page à la française (ou en anglais, ou en italien) et te propose une trame à compléter.</p>
+  <a href="/creer?type=lettre" class="bouton principal grand">Écrire ma lettre</a>
+</aside>
+{% endblock %}

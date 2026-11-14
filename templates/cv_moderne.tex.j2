@@ -1,0 +1,137 @@
+\#{ Modele moderne : bandeau de couleur a gauche (photo ronde, contact, competences,
+    langues), contenu principal a droite. Les deux colonnes passent a la page suivante
+    si le CV est long (paquet paracol). }
+\BLOCK{include "_preambule.tex.j2"}
+\policesans
+\usepackage{paracol}
+\usepackage{eso-pic}
+\usepackage{tikz}
+\geometry{left=0.9cm, right=1.3cm, top=1.3cm, bottom=1.3cm}
+\hypersetup{pdftitle={CV - \VAR{cv.nom}}, pdfauthor={\VAR{cv.nom}}}
+
+\setlength{\columnsep}{1.1cm}
+\columnratio{0.3}
+% Le bandeau de couleur : un rectangle dessiné en fond de CHAQUE page,
+% du bord gauche de la feuille jusqu'au milieu de l'espace entre les colonnes.
+\AddToShipoutPictureBG{\AtPageLowerLeft{%
+  \color{accent}\rule{\dimexpr 0.9cm + 0.3\dimexpr\textwidth-\columnsep\relax + 0.5\columnsep\relax}{\paperheight}}}
+
+% Titre de rubrique dans le bandeau (texte blanc)
+\newcommand{\cote}[1]{\par\vspace{13pt}{\bfseries #1}\par\vspace{-5pt}\rule{\linewidth}{0.6pt}\par\vspace{3pt}}
+% Titre de rubrique dans la colonne principale
+\titleformat{\section}{\normalsize\bfseries\color{accent}}{}{0pt}{}[\vspace{-2pt}\titlerule]
+\titlespacing{\section}{0pt}{13pt}{7pt}
+\definecolor{gris}{HTML}{5F6672}
+
+\begin{document}
+\begin{paracol}{2}
+
+% ======================= Bandeau gauche =======================
+\color{white}\raggedright\small
+\BLOCK{if cv.photo}
+% Photo ronde : on mesure l'image pour remplir le cercle quel que soit son format.
+\sbox0{\includegraphics{\VAR{cv.photo}}}
+\ifdim\wd0>\ht0 \def\dimphoto{height=3.4cm}\else\def\dimphoto{width=3.4cm}\fi
+{\centering
+\begin{tikzpicture}
+  \clip (0,0) circle (1.7cm);
+  \node at (0,0) {\expandafter\includegraphics\expandafter[\dimphoto]{\VAR{cv.photo}}};
+  \draw[white, line width=2.4pt] (0,0) circle (1.7cm);
+\end{tikzpicture}\par}
+\BLOCK{endif}
+
+\BLOCK{if cv.contact_lignes}
+\cote{\VAR{t.contact|upper}}
+\BLOCK{for ligne in cv.contact_lignes}
+\VAR{ligne}\par\vspace{2pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.etat_civil}
+\cote{\VAR{t.etat_civil|upper}}
+\BLOCK{for ligne in cv.etat_civil}
+\textbf{\VAR{ligne[0]}}\par \VAR{ligne[1]}\par\vspace{3pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.competences}
+\cote{\VAR{t.competences|upper}}
+\BLOCK{for c in cv.competences}
+\BLOCK{if c.categorie}
+\textbf{\VAR{c.categorie}}\par
+\BLOCK{endif}
+\VAR{c.liste}\par\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.langues}
+\cote{\VAR{t.langues|upper}}
+\BLOCK{for l in cv.langues}
+\textbf{\VAR{l.langue}}\BLOCK{if l.niveau} -- \VAR{l.niveau}\BLOCK{endif}\par\vspace{2pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.interets}
+\cote{\VAR{t.interets|upper}}
+\VAR{cv.interets}\par
+\BLOCK{endif}
+
+% ======================= Colonne principale =======================
+\switchcolumn
+\color{black}\normalsize
+{\fontsize{25}{29}\selectfont\bfseries\color{accent} \VAR{cv.nom}\par}
+\BLOCK{if cv.titre}
+\vspace{4pt}{\Large\color{gris} \VAR{cv.titre}\par}
+\BLOCK{endif}
+
+\BLOCK{if cv.profil}
+\section{\VAR{t.profil|upper}}
+\VAR{cv.profil}
+
+\BLOCK{endif}
+\BLOCK{if cv.experiences}
+\section{\VAR{t.experiences|upper}}
+\BLOCK{for exp in cv.experiences}
+\textbf{\VAR{exp.poste}} \hfill {\small\color{gris} \VAR{exp.dates}}\par
+\BLOCK{if exp.entreprise or exp.lieu}
+{\color{accent} \VAR{[exp.entreprise, exp.lieu]|select|join(", ")}}\par
+\BLOCK{endif}
+\BLOCK{if exp.points}
+\begin{itemize}
+  \BLOCK{for point in exp.points}
+  \item {}\VAR{point}
+  \BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\vspace{6pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.formations}
+\section{\VAR{t.formations|upper}}
+\BLOCK{for f in cv.formations}
+\textbf{\VAR{f.diplome}} \hfill {\small\color{gris} \VAR{f.dates}}\par
+\BLOCK{if f.ecole}
+{\color{accent} \VAR{f.ecole}}\par
+\BLOCK{endif}
+\BLOCK{if f.details}
+{\small \VAR{f.details}}\par
+\BLOCK{endif}
+\vspace{6pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.references}
+\section{\VAR{t.references|upper}}
+\BLOCK{for r in cv.references}
+\textbf{\VAR{r.nom}}\BLOCK{if r.fonction}, \VAR{r.fonction}\BLOCK{endif}\BLOCK{if r.contact} -- \VAR{r.contact}\BLOCK{endif}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if o.certifier}
+\vspace{14pt}
+{\small\textit{\VAR{t.certif}}}
+\BLOCK{endif}
+
+\end{paracol}
+\end{document}

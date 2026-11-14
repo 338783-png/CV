@@ -1,0 +1,14 @@
+{
+  "destinataire": {
+    "nom": "Madame la Directrice des Ressources Humaines",
+    "entreprise": "Groupe Exemple Finances",
+    "adresse": "12, avenue de l'Indépendance\nDakar"
+  },
+  "lieu": "Dakar",
+  "date": "14 novembre 2026",
+  "objet": "Candidature au poste d'assistante comptable (réf. AC-2026)",
+  "salutation": "Madame la Directrice,",
+  "corps": "Titulaire d'une licence en comptabilité et gestion, et forte de deux années d'expérience en cabinet, je vous adresse ma candidature au poste d'assistante comptable que vous proposez. Votre groupe accompagne des PME de toute la sous-région : c'est exactement le type de clientèle auprès de laquelle j'ai appris mon métier.\n\nAu Cabinet Exemple, j'assure chaque mois la saisie et le lettrage de 300 pièces comptables, la préparation des déclarations de TVA et les rapprochements bancaires de douze clients. J'ai aussi mis en place un tableau de suivi sous Excel qui a réduit de moitié le temps consacré aux relances de pièces manquantes.\n\nRigoureuse, à l'aise avec Sage Comptabilité et le référentiel SYSCOHADA, je souhaite aujourd'hui mettre ces compétences au service d'une équipe plus large. Je serais heureuse de vous exposer ma motivation lors d'un entretien, à la date qui vous conviendra.",
+  "formule": "Je vous prie d'agréer, Madame la Directrice, l'expression de mes salutations distinguées.",
+  "pj": "Curriculum vitae"
+}

@@ -1,0 +1,60 @@
+{
+  "nom": "Awa Exemple",
+  "titre": "Assistante comptable",
+  "email": "awa.exemple@example.com",
+  "telephone": "+221 70 000 00 00",
+  "ville": "Dakar, Sénégal",
+  "etat_civil": {
+    "date_naissance": "12 mars 1999",
+    "lieu_naissance": "Thiès",
+    "nationalite": "Sénégalaise",
+    "situation": "Célibataire",
+    "permis": "B"
+  },
+  "profil": "Titulaire d'une licence en comptabilité, deux ans d'expérience en cabinet. Rigoureuse et à l'aise avec les outils numériques, je recherche un poste d'assistante comptable.",
+  "experiences": [
+    {
+      "poste": "Assistante comptable",
+      "entreprise": "Cabinet Exemple",
+      "lieu": "Dakar",
+      "dates": "01/2024 – 10/2026",
+      "points": "Saisie et lettrage de 300 pièces comptables par mois\nPréparation des déclarations de TVA\nRapprochements bancaires mensuels"
+    },
+    {
+      "poste": "Stagiaire en comptabilité",
+      "entreprise": "Société Exemple SARL",
+      "lieu": "Thiès",
+      "dates": "06/2023 – 09/2023",
+      "points": "Classement et contrôle des factures fournisseurs\nAide à la clôture mensuelle"
+    }
+  ],
+  "formations": [
+    {
+      "diplome": "Licence en Comptabilité et Gestion",
+      "ecole": "Université Exemple",
+      "dates": "2020 – 2023",
+      "details": "Mention Bien"
+    },
+    {
+      "diplome": "Baccalauréat série G",
+      "ecole": "Lycée Exemple",
+      "dates": "2020",
+      "details": ""
+    }
+  ],
+  "competences": [
+    { "categorie": "Comptabilité", "liste": "SYSCOHADA, TVA, rapprochements bancaires" },
+    { "categorie": "Informatique", "liste": "Excel avancé, Sage Comptabilité" }
+  ],
+  "langues": [
+    { "langue": "Français", "niveau": "Courant" },
+    { "langue": "Wolof", "niveau": "Langue maternelle" },
+    { "langue": "Anglais", "niveau": "B1" }
+  ],
+  "liens": [],
+  "interets": "Bénévolat associatif, basket-ball, lecture",
+  "references": [
+    { "nom": "M. Exemple Diop", "fonction": "Expert-comptable, Cabinet Exemple", "contact": "+221 70 000 00 01" }
+  ],
+  "photo": ""
+}

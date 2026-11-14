@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titre %}Conditions d'utilisation{% endblock %}
+{% block description %}Les règles d'utilisation du générateur de CV et de lettres de motivation CV.express.{% endblock %}
+{% block tete %}<meta name="robots" content="noindex">{% endblock %}
+{% block contenu %}
+<h1>Conditions d'utilisation</h1>
+
+<h2>Le service</h2>
+<p>CV.express permet de créer un CV et une lettre de motivation à partir d'un formulaire, et de les télécharger en PDF. Le service est gratuit et accessible sans inscription. En l'utilisant, tu acceptes les présentes conditions.</p>
+
+<h2>Ce que tu t'engages à faire</h2>
+<ul>
+  <li>Saisir des informations exactes, qui te concernent ou que tu as le droit d'utiliser. Tu es seul responsable du contenu de tes documents.</li>
+  <li>Ne pas utiliser le service pour créer de faux documents ou usurper l'identité de quelqu'un.</li>
+  <li>Ne pas chercher à perturber le fonctionnement du site, notamment par des envois automatisés et massifs. Au-delà d'un certain nombre de documents par minute, le site te demande de patienter.</li>
+</ul>
+
+<h2>Ce que nous ne garantissons pas</h2>
+<p>Un CV bien présenté aide, mais ne garantit ni un entretien ni une embauche. Les conseils publiés sur le site décrivent des usages courants : ils peuvent varier selon le pays, le secteur et l'employeur. Relis toujours ton document avant de l'envoyer. Le service est fourni en l'état ; nous faisons de notre mieux pour qu'il soit disponible, sans pouvoir garantir une disponibilité permanente.</p>
+<p>Tes informations sont enregistrées sur ton appareil et non sur nos serveurs : nous ne pouvons pas les récupérer si tu les effaces ou si tu changes d'appareil. Pense à utiliser le bouton « Sauvegarder » de l'éditeur.</p>
+
+<h2>Tes documents t'appartiennent</h2>
+<p>Tu es libre d'utiliser, d'imprimer et d'envoyer les documents que tu crées. Les modèles et le site eux-mêmes restent la propriété de l'éditeur.</p>
+
+<h2>Données personnelles</h2>
+<p>Voir la <a href="/confidentialite">politique de confidentialité</a>.</p>
+
+<h2>Évolution du service</h2>
+<p>Le service et les présentes conditions peuvent évoluer. La version en vigueur est celle publiée sur cette page. Si des fonctions payantes sont ajoutées, leur prix sera indiqué clairement avant tout paiement.</p>
+
+<h2>Droit applicable et litiges</h2>
+<p>Les présentes conditions sont soumises au droit {{ champ("droit_applicable", "pays, par exemple « français » ou « sénégalais »") }}. En cas de désaccord, écris-nous d'abord à {{ champ("email", "adresse e-mail") }} : nous chercherons une solution amiable. À défaut, le litige sera porté devant les tribunaux compétents, sans préjudice des règles protectrices dont tu bénéficies en tant que consommateur dans ton pays de résidence.</p>
+
+<p class="note">Dernière mise à jour : {{ champ("date_mise_a_jour", "date") }}.</p>
+{% endblock %}

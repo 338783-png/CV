@@ -1,0 +1,115 @@
+\#{ Modele africain (usage courant en Afrique francophone et anglophone) :
+    titre CURRICULUM VITAE, bloc etat civil avec photo, rubriques en bandeau,
+    references, et mention de certification sur l'honneur en fin de document. }
+\BLOCK{include "_preambule.tex.j2"}
+\policeserif
+\hypersetup{pdftitle={CV - \VAR{cv.nom}}, pdfauthor={\VAR{cv.nom}}}
+
+% Rubrique = bandeau de couleur sur toute la largeur, texte blanc.
+\newcommand{\bandeau}[1]{%
+  \colorbox{accent}{\parbox{\dimexpr\textwidth-2\fboxsep\relax}{\color{white}\bfseries #1}}}
+\titleformat{\section}{\normalsize}{}{0pt}{\bandeau}
+\titlespacing{\section}{0pt}{12pt}{7pt}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries\color{accent} \VAR{t.cv|upper}}\par
+  \BLOCK{if cv.titre}
+  \vspace{4pt}{\large\bfseries \VAR{cv.titre}}\par
+  \BLOCK{endif}
+\end{center}
+
+% ---------- État civil ----------
+\section{\VAR{t.etat_civil|upper}}
+\begin{minipage}[c]{\VAR{"0.76" if cv.photo else "1"}\textwidth}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}>{\bfseries}p{0.34\linewidth}@{ : }p{0.6\linewidth}@{}}
+  \VAR{t.nom} & \VAR{cv.nom} \\
+  \BLOCK{for ligne in cv.etat_civil}
+  \VAR{ligne[0]} & \VAR{ligne[1]} \\
+  \BLOCK{endfor}
+  \BLOCK{if cv.ville}
+  \VAR{t.adresse} & \VAR{cv.ville} \\
+  \BLOCK{endif}
+  \BLOCK{if cv.telephone}
+  \VAR{t.telephone} & \VAR{cv.telephone} \\
+  \BLOCK{endif}
+  \BLOCK{if cv.email_tex}
+  \VAR{t.email} & \VAR{cv.email_tex} \\
+  \BLOCK{endif}
+  \BLOCK{for lien in cv.liens}
+  \VAR{t.liens if loop.first else ""} & \VAR{lien} \\
+  \BLOCK{endfor}
+\end{tabular}
+\end{minipage}%
+\BLOCK{if cv.photo}
+\hfill
+\begin{minipage}[c]{0.22\textwidth}\raggedleft
+  \includegraphics[width=3.2cm,height=4cm,keepaspectratio]{\VAR{cv.photo}}
+\end{minipage}
+\BLOCK{endif}
+
+\BLOCK{if cv.profil}
+\section{\VAR{t.profil|upper}}
+\VAR{cv.profil}
+
+\BLOCK{endif}
+\BLOCK{if cv.formations}
+\section{\VAR{t.formations|upper}}
+\BLOCK{for f in cv.formations}
+\textbf{\VAR{f.dates}}\BLOCK{if f.dates} : \BLOCK{endif}\textbf{\VAR{f.diplome}}\BLOCK{if f.ecole}, \VAR{f.ecole}\BLOCK{endif}\par
+\BLOCK{if f.details}
+{\small \VAR{f.details}}\par
+\BLOCK{endif}
+\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.experiences}
+\section{\VAR{t.experiences|upper}}
+\BLOCK{for exp in cv.experiences}
+\textbf{\VAR{exp.dates}}\BLOCK{if exp.dates} : \BLOCK{endif}\textbf{\VAR{exp.poste}}\BLOCK{if exp.entreprise or exp.lieu}, \VAR{[exp.entreprise, exp.lieu]|select|join(", ")}\BLOCK{endif}\par
+\BLOCK{if exp.points}
+\begin{itemize}
+  \BLOCK{for point in exp.points}
+  \item {}\VAR{point}
+  \BLOCK{endfor}
+\end{itemize}
+\BLOCK{endif}
+\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.competences}
+\section{\VAR{t.competences|upper}}
+\BLOCK{for c in cv.competences}
+\BLOCK{if c.categorie}\textbf{\VAR{c.categorie} :} \BLOCK{endif}\VAR{c.liste}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.langues}
+\section{\VAR{t.langues|upper}}
+\BLOCK{for l in cv.langues}
+\textbf{\VAR{l.langue}}\BLOCK{if l.niveau} : \VAR{l.niveau}\BLOCK{endif}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.interets}
+\section{\VAR{t.interets|upper}}
+\VAR{cv.interets}\par
+\BLOCK{endif}
+
+\BLOCK{if cv.references}
+\section{\VAR{t.references|upper}}
+\BLOCK{for r in cv.references}
+\textbf{\VAR{r.nom}}\BLOCK{if r.fonction}, \VAR{r.fonction}\BLOCK{endif}\BLOCK{if r.contact} -- \VAR{r.contact}\BLOCK{endif}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if o.certifier}
+\vspace{16pt}
+\textit{\VAR{t.certif}}
+\BLOCK{endif}
+
+\end{document}

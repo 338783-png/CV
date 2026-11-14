@@ -1,0 +1,6 @@
+.venv
+__pycache__
+sortie
+*.pdf
+.git
+texmf-local

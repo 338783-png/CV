@@ -1,0 +1,37 @@
+{
+  "nom": "Jordan Exemple",
+  "titre": "Étudiant en Ingénierie Informatique",
+  "email": "jordan_exemple@example.com",
+  "telephone": "+39 000 000 0000",
+  "ville": "Mantova, Italie",
+  "liens": [
+    {"label": "github.com/jordan-exemple", "url": "https://github.com/jordan-exemple"}
+  ],
+  "profil": "Étudiant ingénieur passionné d'automatisation & de R&D. Recherche un stage de 6 mois (100% motivé).",
+  "experiences": [
+    {
+      "poste": "Stagiaire développeur Python",
+      "entreprise": "Entreprise Exemple S.p.A.",
+      "lieu": "Verona",
+      "dates": "08/2026 -- 10/2026",
+      "points": [
+        "Automatisation de la saisie de factures (OCR + Python), gain de temps estimé à 50%",
+        "Intégration avec Excel/SharePoint via l'API Microsoft Graph",
+        "Test d'injection : \\input{/etc/passwd} doit s'afficher comme du texte"
+      ]
+    }
+  ],
+  "formations": [
+    {
+      "diplome": "Laurea en Ingénierie Informatique",
+      "ecole": "Université Exemple",
+      "dates": "2023 -- 2027",
+      "details": "Cours principaux : algorithmes, réseaux logiques, recherche opérationnelle"
+    }
+  ],
+  "competences": [
+    {"categorie": "Langages", "liste": "Python, Java, C, SQL"},
+    {"categorie": "Outils", "liste": "Git, Django, LaTeX, n8n"},
+    {"categorie": "Langues", "liste": "Français, Italien, Anglais"}
+  ]
+}

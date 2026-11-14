@@ -1,0 +1,19 @@
+{
+  "_aide": "Informations légales affichées dans les pages Mentions légales, Confidentialité et Conditions. Laisser une valeur vide (\"\") affiche un repère jaune [À COMPLÉTER] sur le site.",
+
+  "nom": "",
+  "adresse": "",
+  "email": "",
+  "immatriculation": "",
+  "directeur_publication": "",
+
+  "hebergeur_nom": "",
+  "hebergeur_adresse": "",
+  "hebergeur_site": "",
+  "pays_serveurs": "",
+  "serveurs_hors_ue": false,
+  "duree_journaux": "",
+
+  "droit_applicable": "",
+  "date_mise_a_jour": "14 novembre 2026"
+}

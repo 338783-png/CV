@@ -1,0 +1,120 @@
+\#{ Modele europeen, inspire d'Europass : libelles a gauche, contenu a droite,
+    experiences et formations de la plus recente a la plus ancienne. }
+\BLOCK{include "_preambule.tex.j2"}
+\policesans
+\hypersetup{pdftitle={CV - \VAR{cv.nom}}, pdfauthor={\VAR{cv.nom}}}
+
+% \ligne{libellé à gauche}{contenu à droite}
+\newcommand{\ligne}[2]{%
+  \noindent\parbox[t]{0.26\textwidth}{\raggedleft\small\leavevmode\color{accent}\strut #1}%
+  \hspace{0.03\textwidth}%
+  \parbox[t]{0.71\textwidth}{\leavevmode\strut #2}\par\vspace{6pt}}
+% \rubrique{TITRE} : titre à gauche + filet horizontal à droite
+\newcommand{\rubrique}[1]{%
+  \vspace{8pt}%
+  \noindent\parbox[t]{0.26\textwidth}{\raggedleft\small\bfseries\leavevmode\color{accent}\strut #1}%
+  \hspace{0.03\textwidth}%
+  \raisebox{0.6ex}{\color{accent}\rule{0.71\textwidth}{1pt}}\par\vspace{6pt}}
+
+\begin{document}
+
+% ---------- Informations personnelles ----------
+\ligne{\bfseries \VAR{t.infos|upper}}{{\Large\bfseries \VAR{cv.nom}}}
+\ligne{\BLOCK{if cv.photo}\raisebox{\dimexpr-\height+1.6ex\relax}{\includegraphics[width=2.8cm,height=3.6cm,keepaspectratio]{\VAR{cv.photo}}}\BLOCK{endif}}{%
+  \BLOCK{if cv.ville}
+  \textcolor{accent}{\small \VAR{t.adresse}} \VAR{cv.ville}\par
+  \BLOCK{endif}
+  \BLOCK{if cv.telephone}
+  \textcolor{accent}{\small \VAR{t.telephone}} \VAR{cv.telephone}\par
+  \BLOCK{endif}
+  \BLOCK{if cv.email_tex}
+  \textcolor{accent}{\small \VAR{t.email}} \VAR{cv.email_tex}\par
+  \BLOCK{endif}
+  \BLOCK{for lien in cv.liens}
+  \VAR{lien}\par
+  \BLOCK{endfor}
+  \BLOCK{if cv.etat_civil}
+  \vspace{4pt}
+  \BLOCK{for ligne in cv.etat_civil}
+  \textcolor{accent}{\small \VAR{ligne[0]}} \VAR{ligne[1]}\BLOCK{if not loop.last} \textbar{}\BLOCK{endif}
+
+  \BLOCK{endfor}
+  \BLOCK{endif}
+}
+
+\BLOCK{if cv.titre}
+\rubrique{\VAR{t.poste_vise|upper}}
+\ligne{}{\textbf{\VAR{cv.titre}}}
+\BLOCK{endif}
+
+\BLOCK{if cv.profil}
+\rubrique{\VAR{t.profil|upper}}
+\ligne{}{\VAR{cv.profil}}
+\BLOCK{endif}
+
+\BLOCK{if cv.experiences}
+\rubrique{\VAR{t.experiences|upper}}
+\BLOCK{for exp in cv.experiences}
+\ligne{\VAR{exp.dates}}{%
+  \textbf{\VAR{exp.poste}}\par
+  \BLOCK{if exp.entreprise or exp.lieu}
+  \VAR{[exp.entreprise, exp.lieu]|select|join(", ")}\par
+  \BLOCK{endif}
+  \BLOCK{if exp.points}
+  \begin{itemize}
+    \BLOCK{for point in exp.points}
+    \item {}\VAR{point}
+    \BLOCK{endfor}
+  \end{itemize}
+  \BLOCK{endif}
+}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.formations}
+\rubrique{\VAR{t.formations|upper}}
+\BLOCK{for f in cv.formations}
+\ligne{\VAR{f.dates}}{%
+  \textbf{\VAR{f.diplome}}\par
+  \BLOCK{if f.ecole}
+  \VAR{f.ecole}\par
+  \BLOCK{endif}
+  \BLOCK{if f.details}
+  {\small \VAR{f.details}}\par
+  \BLOCK{endif}
+}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.langues}
+\rubrique{\VAR{t.langues|upper}}
+\BLOCK{for l in cv.langues}
+\ligne{\VAR{l.langue}}{\VAR{l.niveau}}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.competences}
+\rubrique{\VAR{t.competences|upper}}
+\BLOCK{for c in cv.competences}
+\ligne{\VAR{c.categorie}}{\VAR{c.liste}}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.interets}
+\rubrique{\VAR{t.interets|upper}}
+\ligne{}{\VAR{cv.interets}}
+\BLOCK{endif}
+
+\BLOCK{if cv.references}
+\rubrique{\VAR{t.references|upper}}
+\BLOCK{for r in cv.references}
+\ligne{}{\textbf{\VAR{r.nom}}\BLOCK{if r.fonction}, \VAR{r.fonction}\BLOCK{endif}\BLOCK{if r.contact} -- \VAR{r.contact}\BLOCK{endif}}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if o.certifier}
+\vspace{10pt}
+\ligne{}{\textit{\VAR{t.certif}}}
+\BLOCK{endif}
+
+\end{document}

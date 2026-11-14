@@ -1,0 +1,26 @@
+\#{ Lettre epuree : nom centre, coordonnees sur une ligne, filet de couleur. }
+\BLOCK{include "_preambule.tex.j2"}
+\policesans
+\geometry{margin=2.4cm, top=2cm}
+\hypersetup{pdftitle={\VAR{l.objet or "Lettre de motivation"} - \VAR{l.exp.nom}}, pdfauthor={\VAR{l.exp.nom}}}
+\setlength{\parskip}{9pt}
+
+\begin{document}
+
+% ---------- Expéditeur (en-tête centré) ----------
+\begin{center}
+  {\fontsize{21}{25}\selectfont\bfseries\color{accent} \VAR{l.exp.nom}\par}
+  \BLOCK{if l.exp.titre}
+  \vspace{3pt}{\large \VAR{l.exp.titre}\par}
+  \BLOCK{endif}
+  \BLOCK{if l.expediteur_ligne}
+  \vspace{5pt}{\small \VAR{l.expediteur_ligne}\par}
+  \BLOCK{endif}
+  \vspace{4pt}{\color{accent}\rule{\textwidth}{1pt}}
+\end{center}
+
+\vspace{0.4cm}
+
+\BLOCK{include "_lettre_corps.tex.j2"}
+
+\end{document}

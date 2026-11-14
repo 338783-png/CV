@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Créer mon CV · CV.express</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="page-editeur">
+<header class="barre">
+  <a class="logo" href="/">CV<span>.</span>express</a>
+  <nav class="onglets" role="tablist" aria-label="Type de document">
+    <button role="tab" data-type="cv" aria-selected="true">CV</button>
+    <button role="tab" data-type="lettre" aria-selected="false">Lettre de motivation</button>
+  </nav>
+  <div class="outils">
+    <button type="button" id="btn-exemple" class="mini">Voir un exemple</button>
+    <button type="button" id="btn-exporter" class="mini" title="Enregistrer mes données dans un fichier">Sauvegarder</button>
+    <label class="mini" title="Reprendre des données enregistrées">Reprendre<input type="file" id="btn-importer" accept="application/json,.json" hidden></label>
+    <button type="button" id="btn-vider" class="mini">Tout effacer</button>
+  </div>
+</header>
+
+<main class="editeur">
+  <form id="formulaire" autocomplete="off" novalidate>
+
+    <div class="jauge pour-cv">
+      <progress id="progres" max="100" value="0" aria-labelledby="progres-texte"></progress>
+      <span id="progres-texte"></span>
+    </div>
+
+    <details open>
+      <summary>Apparence</summary>
+      <fieldset class="choix-modele pour-cv">
+        <legend>Modèle</legend>
+        <label><input type="radio" name="modele" value="moderne" data-k="options.modele">
+          <img src="img/modele_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
+        <label><input type="radio" name="modele" value="classique" data-k="options.modele">
+          <img src="img/modele_classique.png" alt="" loading="lazy"><span>Classique</span></label>
+        <label><input type="radio" name="modele" value="europeen" data-k="options.modele">
+          <img src="img/modele_europeen.png" alt="" loading="lazy"><span>Européen</span></label>
+        <label><input type="radio" name="modele" value="africain" data-k="options.modele">
+          <img src="img/modele_africain.png" alt="" loading="lazy"><span>Africain</span></label>
+      </fieldset>
+      <p class="conseil pour-cv" id="conseil-modele"></p>
+      <div class="grille">
+        <fieldset class="choix-couleur">
+          <legend>Couleur</legend>
+          <label title="Bleu"><input type="radio" name="couleur" value="1F4E79" data-k="options.couleur"><span class="pastille c-bleu"></span><span class="sr">Bleu</span></label>
+          <label title="Vert"><input type="radio" name="couleur" value="1E5F4B" data-k="options.couleur"><span class="pastille c-vert"></span><span class="sr">Vert</span></label>
+          <label title="Bordeaux"><input type="radio" name="couleur" value="7A1F1F" data-k="options.couleur"><span class="pastille c-bordeaux"></span><span class="sr">Bordeaux</span></label>
+          <label title="Violet"><input type="radio" name="couleur" value="5B3A8C" data-k="options.couleur"><span class="pastille c-violet"></span><span class="sr">Violet</span></label>
+          <label title="Ocre"><input type="radio" name="couleur" value="9A5B12" data-k="options.couleur"><span class="pastille c-ocre"></span><span class="sr">Ocre</span></label>
+          <label title="Noir"><input type="radio" name="couleur" value="222222" data-k="options.couleur"><span class="pastille c-noir"></span><span class="sr">Noir</span></label>
+        </fieldset>
+        <label>Langue du document
+          <select data-k="options.langue">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="it">Italiano</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>Identité</summary>
+      <div class="grille">
+        <label>Nom et prénoms *<input data-k="cv.nom" maxlength="120" required autocomplete="name"></label>
+        <label>Titre / poste visé<input data-k="cv.titre" maxlength="160" placeholder="Assistante comptable"></label>
+        <label>E-mail<input type="email" data-k="cv.email" maxlength="120" autocomplete="email"></label>
+        <label>Téléphone<input type="tel" data-k="cv.telephone" maxlength="60" autocomplete="tel"></label>
+        <label class="large">Adresse / ville<input data-k="cv.ville" maxlength="200" placeholder="Dakar, Sénégal"></label>
+      </div>
+    </details>
+
+    <!-- ===================== CV ===================== -->
+    <div class="pour-cv">
+      <details>
+        <summary>Photo et état civil <small>facultatif</small></summary>
+        <div class="photo-ligne">
+          <img id="photo-apercu" alt="" hidden>
+          <label class="mini">Choisir une photo<input type="file" id="photo-fichier" accept="image/jpeg,image/png" hidden></label>
+          <button type="button" id="photo-retirer" class="mini" hidden>Retirer</button>
+        </div>
+        <div class="grille">
+          <label>Date de naissance<input data-k="cv.etat_civil.date_naissance" maxlength="120"></label>
+          <label>Lieu de naissance<input data-k="cv.etat_civil.lieu_naissance" maxlength="120"></label>
+          <label>Nationalité<input data-k="cv.etat_civil.nationalite" maxlength="120"></label>
+          <label>Situation matrimoniale<input data-k="cv.etat_civil.situation" maxlength="120"></label>
+          <label>Permis de conduire<input data-k="cv.etat_civil.permis" maxlength="120"></label>
+        </div>
+      </details>
+
+      <details>
+        <summary>Profil</summary>
+        <label>Quelques lignes sur toi et ton objectif
+          <textarea data-k="cv.profil" rows="4" maxlength="2000"></textarea>
+        </label>
+      </details>
+
+      <details open><summary>Expériences</summary><div data-liste="experiences"></div></details>
+      <details open><summary>Formation</summary><div data-liste="formations"></div></details>
+      <details><summary>Compétences</summary><div data-liste="competences"></div></details>
+      <details><summary>Langues</summary><div data-liste="langues"></div></details>
+      <details><summary>Liens <small>LinkedIn, portfolio…</small></summary><div data-liste="liens"></div></details>
+
+      <details>
+        <summary>Centres d'intérêt et références</summary>
+        <label>Centres d'intérêt<input data-k="cv.interets" maxlength="500"></label>
+        <div data-liste="references" class="espace-haut"></div>
+        <label class="case"><input type="checkbox" data-k="options.certifier">
+          Ajouter la mention « Je certifie sur l'honneur l'exactitude des informations »</label>
+      </details>
+    </div>
+
+    <!-- ===================== Lettre ===================== -->
+    <div class="pour-lettre" hidden>
+      <details open>
+        <summary>Destinataire</summary>
+        <div class="grille">
+          <label>Nom ou fonction<input data-k="lettre.destinataire.nom" maxlength="120" placeholder="Madame la Directrice des RH"></label>
+          <label>Entreprise<input data-k="lettre.destinataire.entreprise" maxlength="160"></label>
+          <label class="large">Adresse
+            <textarea data-k="lettre.destinataire.adresse" rows="2" maxlength="600"></textarea>
+          </label>
+        </div>
+      </details>
+      <details open>
+        <summary>Lettre</summary>
+        <div class="grille">
+          <label>Fait à<input data-k="lettre.lieu" maxlength="80"></label>
+          <label>Date<input data-k="lettre.date" maxlength="60"></label>
+          <label class="large">Objet<input data-k="lettre.objet" maxlength="300" placeholder="Candidature au poste de…"></label>
+          <label class="large">Formule d'appel<input data-k="lettre.salutation" maxlength="160"></label>
+          <label class="large">Texte de la lettre * <small>un retour à la ligne = un nouveau paragraphe</small>
+            <textarea data-k="lettre.corps" rows="12" maxlength="8000"></textarea>
+          </label>
+          <label class="large">Formule de politesse
+            <textarea data-k="lettre.formule" rows="2" maxlength="600"></textarea>
+          </label>
+          <label class="large">Pièces jointes<input data-k="lettre.pj" maxlength="300" placeholder="CV"></label>
+        </div>
+        <button type="button" id="btn-trame" class="ajouter">Insérer une trame de lettre à compléter</button>
+      </details>
+    </div>
+  </form>
+
+  <section class="apercu" id="apercu" aria-label="Aperçu du document">
+    <div class="apercu-actions">
+      <span id="etat" role="status"></span>
+      <div class="apercu-boutons">
+        <button type="button" id="btn-partager" class="bouton" disabled hidden>Partager</button>
+        <button type="button" id="btn-ouvrir" class="bouton" disabled>Ouvrir le PDF</button>
+        <button type="button" id="btn-telecharger" class="bouton principal" disabled>Télécharger le PDF</button>
+      </div>
+    </div>
+    <p id="erreur" role="alert" hidden></p>
+    <div id="vide" class="vide">
+      <img src="img/modele_moderne.png" alt="">
+      <p>Ton document s'affiche ici au fur et à mesure que tu remplis le formulaire.</p>
+      <button type="button" id="btn-exemple-vide" class="bouton">Voir avec un exemple</button>
+    </div>
+    <div id="pages" class="pages"></div>
+  </section>
+</main>
+
+<div class="barre-bas">
+  <button type="button" id="btn-voir" class="bouton">Voir l'aperçu</button>
+  <button type="button" id="btn-telecharger-bas" class="bouton principal" disabled>Télécharger le PDF</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

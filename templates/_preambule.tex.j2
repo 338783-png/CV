@@ -1,0 +1,35 @@
+\#{ Preambule commun a tous les modeles (inclus au debut de chacun).
+    Attention : pas d'accolade fermante dans un commentaire Jinja, elle le terminerait. }
+\documentclass[11pt,a4paper]{article}
+
+% Le même modèle doit fonctionner avec pdflatex (rapide) et lualatex (tous les
+% caractères, dont ɛ ɔ ŋ) : chaque moteur a sa façon de charger les polices.
+% Les modèles choisissent ensuite \policeserif ou \policesans.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}   % accents tapés directement (é, è, à…)
+  \usepackage[T1]{fontenc}      % vrais caractères accentués -> texte copiable / lisible par les ATS
+  \usepackage{textcomp}
+  \newcommand{\policeserif}{\usepackage{lmodern}}
+  \newcommand{\policesans}{\usepackage{tgheros}\renewcommand{\familydefault}{\sfdefault}}
+\else
+  \usepackage{fontspec}
+  \setmainfont{DejaVuSerif}[Path=\VAR{polices}/, Extension=.ttf, Scale=0.92,
+    UprightFont=*, BoldFont=*-Bold, ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
+  \setsansfont{DejaVuSans}[Path=\VAR{polices}/, Extension=.ttf, Scale=0.92,
+    UprightFont=*, BoldFont=*-Bold, ItalicFont=*-Oblique, BoldItalicFont=*-BoldOblique]
+  \newcommand{\policeserif}{}
+  \newcommand{\policesans}{\renewcommand{\familydefault}{\sfdefault}}
+\fi
+\usepackage[margin=1.8cm]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{accent}{HTML}{\VAR{o.couleur}}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.2em, itemsep=1pt, topsep=2pt}

@@ -1,0 +1,42 @@
+\#{ Partie commune a tous les modeles de lettre : destinataire, lieu et date, objet,
+    formule d'appel, texte, formule de politesse, signature, pieces jointes. }
+% ---------- Destinataire ----------
+\BLOCK{if l.destinataire_tex}
+\vspace{6pt}
+\hfill\begin{minipage}[t]{0.45\textwidth}
+\VAR{l.destinataire_tex}
+\end{minipage}
+
+\BLOCK{endif}
+\BLOCK{if l.lieu_date}
+\vspace{6pt}
+\hfill\begin{minipage}[t]{0.45\textwidth}
+\VAR{l.lieu_date}
+\end{minipage}
+
+\BLOCK{endif}
+\BLOCK{if l.objet}
+\vspace{10pt}
+\textbf{{\color{accent}\VAR{t.objet}} \VAR{l.objet}}
+
+\BLOCK{endif}
+\vspace{6pt}
+\BLOCK{if l.salutation}
+\VAR{l.salutation}
+
+\BLOCK{endif}
+\VAR{l.corps}
+
+\BLOCK{if l.formule}
+\VAR{l.formule}
+
+\BLOCK{endif}
+\vspace{18pt}
+\hfill\begin{minipage}[t]{0.45\textwidth}
+\textbf{\VAR{l.exp.nom}}
+\end{minipage}
+
+\BLOCK{if l.pj}
+\vfill
+{\small {\color{accent}\VAR{t.pj}} \VAR{l.pj}}
+\BLOCK{endif}
