@@ -20,6 +20,10 @@
   document.documentElement.lang = LANGUE;
 
   const DICO = { en: {
+    "Certifications": "Certifications", "Projets": "Projects", "Certification": "Certification", "Projet": "Project",
+    "Intitulé (ex. TOEIC 750, permis cariste)": "Title (e.g. TOEIC 750, forklift licence)", "Organisme": "Issuing body",
+    "Année": "Year", "Nom du projet": "Project name", "Ce que tu as fait, et le résultat": "What you did, and the result",
+    "Choisir une formule de politesse toute prête": "Choose a ready-made closing formula",
     "Créer mon CV · CV.express": "Create my CV · CV.express",
     "Mon espace · CV.express": "My space · CV.express",
     "Type de document": "Document type",
@@ -270,6 +274,10 @@
     "Aucun texte de lettre n'a été trouvé dans ce fichier.": "No letter text was found in this file.",
     "Le contenu de ce fichier n'a pas pu être reconnu comme un CV. Remplis le formulaire à la main : cela prend quelques minutes.": "The content of this file could not be recognised as a CV. Fill in the form by hand: it takes a few minutes."
   }, it: {
+    "Certifications": "Certificazioni", "Projets": "Progetti", "Certification": "Certificazione", "Projet": "Progetto",
+    "Intitulé (ex. TOEIC 750, permis cariste)": "Titolo (es. TOEIC 750, patentino del muletto)", "Organisme": "Ente",
+    "Année": "Anno", "Nom du projet": "Nome del progetto", "Ce que tu as fait, et le résultat": "Che cosa hai fatto, e il risultato",
+    "Choisir une formule de politesse toute prête": "Scegli una formula di saluto già pronta",
     "Créer mon CV · CV.express": "Crea il mio CV · CV.express",
     "Mon espace · CV.express": "Il mio spazio · CV.express",
     "Type de document": "Tipo di documento",

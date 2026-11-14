@@ -95,6 +95,24 @@
 \BLOCK{endfor}
 \BLOCK{endif}
 
+\BLOCK{if cv.certifications}
+\section{\VAR{t.certifications|upper}}
+\BLOCK{for c in cv.certifications}
+\textbf{\VAR{c.date}}\BLOCK{if c.date} : \BLOCK{endif}\textbf{\VAR{c.titre}}\BLOCK{if c.organisme}, \VAR{c.organisme}\BLOCK{endif}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.projets}
+\section{\VAR{t.projets|upper}}
+\BLOCK{for pr in cv.projets}
+\textbf{\VAR{pr.dates}}\BLOCK{if pr.dates} : \BLOCK{endif}\textbf{\VAR{pr.titre}}\par
+\BLOCK{if pr.details}
+{\small \VAR{pr.details}}\par
+\BLOCK{endif}
+\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
 \BLOCK{if cv.interets}
 \section{\VAR{t.interets|upper}}
 \VAR{cv.interets}\par

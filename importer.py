@@ -137,8 +137,11 @@ _RUBRIQUES = {
     "references": ["references", "referenze", "referees"],
     "ignorer": ["contact", "contacts", "coordonnees", "informations personnelles", "etat civil", "infos personnelles",
                 "personal information", "personal details", "contatti", "informazioni personali", "dati personali",
-                "curriculum vitae", "cv", "certifications", "certificats", "projets", "projects", "progetti",
-                "certificazioni", "publications", "distinctions", "awards"],
+                "curriculum vitae", "cv", "publications", "distinctions", "awards"],
+    "certifications": ["certifications", "certification", "certificats", "certificats et attestations", "attestations",
+                       "certificates", "licenses and certifications", "certificazioni", "attestati"],
+    "projets": ["projets", "projets realises", "projets personnels", "realisations", "projects", "personal projects",
+                "progetti", "progetti personali"],
 }
 _TITRES = {titre: rubrique for rubrique, titres in _RUBRIQUES.items() for titre in titres}
 
@@ -204,7 +207,7 @@ def analyser_cv(texte):
     lignes = [l for l in lignes if l]
     cv = {"nom": "", "titre": "", "email": "", "telephone": "", "ville": "", "profil": "", "interets": "",
           "etat_civil": {}, "experiences": [], "formations": [], "competences": [], "langues": [], "liens": [],
-          "references": []}
+          "certifications": [], "projets": [], "references": []}
 
     # ---- Coordonnées : reconnaissables où qu'elles soient ----
     m = _EMAIL.search(texte)
@@ -313,6 +316,22 @@ def analyser_cv(texte):
     cv["formations"] = [
         {"diplome": e["titre"], "ecole": e["sous_titre"], "dates": e["dates"], "details": " ".join(e["details"])[:500]}
         for e in _entrees(blocs.get("formations", []))][:20]
+
+    # ---- Certifications : « Intitulé, organisme – 2025 » ; projets : comme les expériences ----
+    for ligne in (_propre(l) for l in blocs.get("certifications", [])[:12]):
+        periode = _PERIODE.search(ligne)
+        if periode:
+            ligne = " ".join((ligne[:periode.start()] + " " + ligne[periode.end():]).split()).strip(" -–—|,:;()")
+        titre, organisme = _couper(ligne)
+        if not organisme and "," in titre:
+            titre, _, organisme = (x.strip() for x in titre.partition(","))
+        if titre:
+            cv["certifications"].append({"titre": titre[:200], "organisme": organisme[:160],
+                                         "date": periode.group().strip() if periode else ""})
+    cv["projets"] = [
+        {"titre": " – ".join(x for x in (e["titre"], e["sous_titre"]) if x)[:200], "dates": e["dates"],
+         "details": " ".join(e["details"])[:600]}
+        for e in _entrees(blocs.get("projets", []))][:12]
 
     # ---- Compétences : « Catégorie : liste », ou une catégorie seule sur sa ligne suivie de la liste ----
     lignes_c = [_propre(l) for l in blocs.get("competences", [])]

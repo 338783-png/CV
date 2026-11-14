@@ -121,6 +121,28 @@
 \BLOCK{endfor}
 \BLOCK{endif}
 
+\BLOCK{if cv.certifications}
+\section{\VAR{t.certifications|upper}}
+\BLOCK{for c in cv.certifications}
+\textbf{\VAR{c.titre}} \hfill {\small\color{gris} \VAR{c.date}}\par
+\BLOCK{if c.organisme}
+{\color{accent} \VAR{c.organisme}}\par
+\BLOCK{endif}
+\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.projets}
+\section{\VAR{t.projets|upper}}
+\BLOCK{for pr in cv.projets}
+\textbf{\VAR{pr.titre}} \hfill {\small\color{gris} \VAR{pr.dates}}\par
+\BLOCK{if pr.details}
+{\small \VAR{pr.details}}\par
+\BLOCK{endif}
+\vspace{6pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
 \BLOCK{if cv.references}
 \section{\VAR{t.references|upper}}
 \BLOCK{for r in cv.references}

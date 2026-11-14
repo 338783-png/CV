@@ -681,3 +681,5 @@ body:has(#espace:not([hidden])) .article { max-width: 900px; }
 @media (max-width: 520px) {
   .entete .langues { display: none; }
 }
+
+.choix-rapide { margin-bottom: 6px; }

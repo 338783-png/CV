@@ -127,6 +127,8 @@
       <details open><summary>Formation</summary><div data-liste="formations"></div></details>
       <details><summary>Compétences</summary><div data-liste="competences"></div></details>
       <details><summary>Langues</summary><div data-liste="langues"></div></details>
+      <details><summary>Certifications <small>facultatif</small></summary><div data-liste="certifications"></div></details>
+      <details><summary>Projets <small>facultatif</small></summary><div data-liste="projets"></div></details>
       <details><summary>Liens <small>LinkedIn, portfolio…</small></summary><div data-liste="liens"></div></details>
 
       <details>
@@ -164,7 +166,7 @@
         <p class="conseil">Une bonne lettre tient sur une page et suit quatre temps. Remplis-les dans l'ordre : chaque case devient un paragraphe.</p>
         <button type="button" id="btn-trame" class="ajouter">Pré-remplir avec des phrases à compléter</button>
         <div class="grille espace-haut">
-          <label class="large">Formule d'appel<input data-k="lettre.salutation" maxlength="160"></label>
+          <label class="large">Formule d'appel<input data-k="lettre.salutation" maxlength="160" data-suggere="salutations"></label>
           <label class="large">Accroche <small>pourquoi tu écris : le poste visé, ta situation actuelle</small>
             <textarea data-k="lettre.parties.accroche" rows="3" maxlength="2000"></textarea>
           </label>
@@ -178,6 +180,7 @@
             <textarea data-k="lettre.parties.conclusion" rows="2" maxlength="2000"></textarea>
           </label>
           <label class="large">Formule de politesse
+            <select id="choix-formule" class="choix-rapide" aria-label="Choisir une formule de politesse toute prête"></select>
             <textarea data-k="lettre.formule" rows="2" maxlength="600"></textarea>
           </label>
         </div>
@@ -185,7 +188,7 @@
       </details>
       <details open>
         <summary>Pièces jointes <small>facultatif</small></summary>
-        <label>Documents joints à la lettre<input data-k="lettre.pj" maxlength="300" placeholder="Curriculum vitae"></label>
+        <label>Documents joints à la lettre<input data-k="lettre.pj" maxlength="300" placeholder="Curriculum vitae" data-suggere="pieces"></label>
       </details>
     </div>
   </form>

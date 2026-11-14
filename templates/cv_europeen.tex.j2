@@ -100,6 +100,25 @@
 \BLOCK{endfor}
 \BLOCK{endif}
 
+\BLOCK{if cv.certifications}
+\rubrique{\VAR{t.certifications|upper}}
+\BLOCK{for c in cv.certifications}
+\ligne{\VAR{c.date}}{\textbf{\VAR{c.titre}}\BLOCK{if c.organisme}, \VAR{c.organisme}\BLOCK{endif}}
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.projets}
+\rubrique{\VAR{t.projets|upper}}
+\BLOCK{for pr in cv.projets}
+\ligne{\VAR{pr.dates}}{%
+  \textbf{\VAR{pr.titre}}\par
+  \BLOCK{if pr.details}
+  {\small \VAR{pr.details}}\par
+  \BLOCK{endif}
+}
+\BLOCK{endfor}
+\BLOCK{endif}
+
 \BLOCK{if cv.interets}
 \rubrique{\VAR{t.interets|upper}}
 \ligne{}{\VAR{cv.interets}}

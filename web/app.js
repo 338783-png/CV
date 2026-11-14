@@ -29,6 +29,11 @@ const LISTES = {
     ["categorie", "Catégorie (ex. Informatique)", "suggere:categories"], ["liste", "Compétences"]] },
   langues: { nom: "Langue", champs: [
     ["langue", "Langue", "suggere:langues"], ["niveau", "Niveau", "choix:niveaux"]] },
+  certifications: { nom: "Certification", champs: [
+    ["titre", "Intitulé (ex. TOEIC 750, permis cariste)"], ["organisme", "Organisme"], ["date", "Année"]] },
+  projets: { nom: "Projet", champs: [
+    ["titre", "Nom du projet"], ["dates", "Dates"],
+    ["details", "Ce que tu as fait, et le résultat", "textarea"]] },
   liens: { nom: "Lien", champs: [["label", "Texte affiché", "suggere:liens"], ["url", "Adresse (URL)"]] },
   references: { nom: "Référence", champs: [
     ["nom", "Nom"], ["fonction", "Fonction et entreprise"], ["contact", "Téléphone ou e-mail"]] },
@@ -58,6 +63,13 @@ const CHOIX = {
     categories: ["Informatique", "Bureautique", "Langages", "Outils", "Comptabilité", "Gestion", "Communication",
                  "Commerce et vente", "Techniques", "Qualités personnelles"],
     liens: ["LinkedIn", "GitHub", "Portfolio", "Site web", "Behance"],
+    salutations: ["Madame, Monsieur,", "Madame,", "Monsieur,", "Madame la Directrice,", "Monsieur le Directeur,",
+                  "Madame la Responsable des ressources humaines,", "Monsieur le Responsable des ressources humaines,"],
+    formules: ["Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+               "Dans l'attente de votre réponse, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+               "Veuillez recevoir, Madame, Monsieur, mes salutations respectueuses.",
+               "Je vous prie de croire, Madame, Monsieur, à l'assurance de ma considération distinguée."],
+    pieces: ["Curriculum vitae", "CV et copies des diplômes", "CV, diplômes et attestations de travail"],
   },
   en: {
     niveaux: ["Native speaker", "Bilingual", "Fluent", "C2 – Proficient", "C1 – Advanced", "B2 – Upper intermediate",
@@ -79,6 +91,11 @@ const CHOIX = {
     categories: ["IT", "Office software", "Programming languages", "Tools", "Accounting", "Management", "Communication",
                  "Sales", "Technical skills", "Personal qualities"],
     liens: ["LinkedIn", "GitHub", "Portfolio", "Website", "Behance"],
+    salutations: ["Dear Sir or Madam,", "Dear Hiring Manager,", "Dear Sir,", "Dear Madam,", "Dear Director,",
+                  "Dear Human Resources Manager,", "Dear Recruitment Team,"],
+    formules: ["Yours faithfully,", "Yours sincerely,", "Kind regards,",
+               "I look forward to hearing from you. Yours faithfully,"],
+    pieces: ["Curriculum vitae", "CV and copies of diplomas", "CV, diplomas and work certificates"],
   },
   it: {
     niveaux: ["Madrelingua", "Bilingue", "Fluente", "C2 – Padronanza", "C1 – Avanzato", "B2 – Intermedio superiore",
@@ -100,6 +117,11 @@ const CHOIX = {
     categories: ["Informatica", "Pacchetto Office", "Linguaggi", "Strumenti", "Contabilità", "Gestione", "Comunicazione",
                  "Commercio e vendita", "Competenze tecniche", "Qualità personali"],
     liens: ["LinkedIn", "GitHub", "Portfolio", "Sito web", "Behance"],
+    salutations: ["Gentili Signori,", "Gentile Signora,", "Egregio Signore,", "Gentile Direttrice,", "Egregio Direttore,",
+                  "Gentile Responsabile delle Risorse Umane,", "Spettabile Azienda,"],
+    formules: ["In attesa di un Vostro cortese riscontro, porgo distinti saluti.", "Distinti saluti.", "Cordiali saluti.",
+               "RingraziandoVi per l'attenzione, porgo cordiali saluti."],
+    pieces: ["Curriculum vitae", "CV e copie dei titoli di studio", "CV, titoli di studio e attestati di lavoro"],
   },
 };
 function choix(nom) {
@@ -131,6 +153,7 @@ function brancherSuggestions(saisie, nom) {
 
 /** Champs fixes du formulaire (état civil) : data-choix="situations", data-suggere="nationalites". */
 function remplirChoix() {
+  remplirMenu($("#choix-formule"), "formules", "");    // lettre : formules de politesse toutes prêtes
   for (const menu of $$("select[data-choix]")) remplirMenu(menu, menu.dataset.choix, lire(menu.dataset.k));
   for (const saisie of $$("input[data-suggere]")) brancherSuggestions(saisie, saisie.dataset.suggere);
 }
@@ -206,6 +229,7 @@ function etatVide() {
     options: { modele: "moderne", modele_lettre: "classique", langue: LANGUE_SITE, couleur: "1F4E79", certifier: false },
     cv: { nom: "", titre: "", email: "", telephone: "", ville: "", etat_civil: {}, profil: "",
           experiences: [{}], formations: [{}], competences: [{}], langues: [{}], liens: [],
+          certifications: [], projets: [],
           interets: "", references: [], photo: "" },
     lettre: { destinataire: {}, lieu: "", objet: "", pj: "",
               parties: { accroche: "", parcours: "", entreprise: "", conclusion: "" },
@@ -617,6 +641,14 @@ function adapterLangueLettre(langue) {
   }
   remplirChamps();
 }
+
+// Lettre : une formule de politesse choisie dans le menu remplace le texte de la case.
+$("#choix-formule").addEventListener("change", e => {
+  if (!e.target.value) return;
+  etat.lettre.formule = e.target.value;
+  e.target.value = "";
+  remplirChamps(); modifie();
+});
 
 $("#btn-trame").addEventListener("click", () => {
   if (texteLettre(etat.lettre) && !confirm("Remplacer le texte actuel de la lettre par les phrases à compléter ?")) return;

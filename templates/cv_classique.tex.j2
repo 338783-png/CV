@@ -90,6 +90,24 @@
 \par
 \BLOCK{endif}
 
+\BLOCK{if cv.certifications}
+\section{\VAR{t.certifications}}
+\BLOCK{for c in cv.certifications}
+\textbf{\VAR{c.titre}}\BLOCK{if c.organisme}, \VAR{c.organisme}\BLOCK{endif} \hfill \VAR{c.date}\par
+\BLOCK{endfor}
+\BLOCK{endif}
+
+\BLOCK{if cv.projets}
+\section{\VAR{t.projets}}
+\BLOCK{for pr in cv.projets}
+\textbf{\VAR{pr.titre}} \hfill \VAR{pr.dates}\par
+\BLOCK{if pr.details}
+\VAR{pr.details}\par
+\BLOCK{endif}
+\vspace{4pt}
+\BLOCK{endfor}
+\BLOCK{endif}
+
 \BLOCK{if cv.interets}
 \section{\VAR{t.interets}}
 \VAR{cv.interets}\par

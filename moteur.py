@@ -85,6 +85,8 @@ LIBELLES = {
         "langues": "Langues",
         "interets": "Centres d'intérêt",
         "references": "Références",
+        "certifications": "Certifications",
+        "projets": "Projets",
         "certif": "Je certifie sur l'honneur l'exactitude des informations ci-dessus.",
         "objet": "Objet :",
         "pj": "P.J. :",
@@ -113,6 +115,8 @@ LIBELLES = {
         "langues": "Languages",
         "interets": "Interests",
         "references": "References",
+        "certifications": "Certifications",
+        "projets": "Projects",
         "certif": "I hereby certify that the above information is true and correct.",
         "objet": "Subject:",
         "pj": "Encl.:",
@@ -141,6 +145,8 @@ LIBELLES = {
         "langues": "Lingue",
         "interets": "Interessi",
         "references": "Referenze",
+        "certifications": "Certificazioni",
+        "projets": "Progetti",
         "certif": "Dichiaro sotto la mia responsabilità che le informazioni sopra riportate sono veritiere.",
         "objet": "Oggetto:",
         "pj": "Allegati:",
@@ -411,6 +417,18 @@ def preparer_cv(brut, options=None):
         {"langue": _texte(l.get("langue"), 60), "niveau": _texte(l.get("niveau"), 80)}
         for l in _liste(brut.get("langues"), 12)
         if _texte(l.get("langue"))
+    ]
+    cv["certifications"] = [
+        {"titre": _texte(c.get("titre"), 200), "organisme": _texte(c.get("organisme"), 160),
+         "date": _texte(c.get("date"), 60)}
+        for c in _liste(brut.get("certifications"), 12)
+        if _texte(c.get("titre"))
+    ]
+    cv["projets"] = [
+        {"titre": _texte(pr.get("titre"), 200), "dates": _texte(pr.get("dates"), 60),
+         "details": _texte(pr.get("details"), 600)}
+        for pr in _liste(brut.get("projets"), 12)
+        if _texte(pr.get("titre"))
     ]
     cv["references"] = [
         {"nom": _texte(r.get("nom"), 120), "fonction": _texte(r.get("fonction"), 200),
