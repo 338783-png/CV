@@ -33,7 +33,9 @@ DOSSIER = Path(os.environ.get("DOSSIER_DONNEES") or RACINE / "donnees")
 BASE = DOSSIER / "comptes.sqlite3"
 
 MDP_MIN, MDP_MAX = 8, 200
-DONNEES_MAX = 2_500_000          # taille maximale du CV enregistré (photo comprise), en octets
+DONNEES_MAX = 2_500_000          # taille maximale d'un document enregistré (photo comprise), en octets
+DOCUMENTS_MAX = 10               # nombre de documents (un CV et sa lettre) par compte
+NOM_MAX = 60
 SESSION_JOURS = 30
 _EMAIL_OK = re.compile(r"^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 
@@ -63,10 +65,19 @@ def initialiser(app):
             jeton     TEXT NOT NULL,           -- change à chaque suppression/changement : invalide les sessions
             cree_le   INTEGER NOT NULL,
             vu_le     INTEGER NOT NULL)""")
-        b.execute("""CREATE TABLE IF NOT EXISTS donnees (
-            compte_id  INTEGER PRIMARY KEY REFERENCES comptes(id) ON DELETE CASCADE,
+        # Un compte peut garder plusieurs documents (un CV et sa lettre), par exemple un par offre.
+        b.execute("""CREATE TABLE IF NOT EXISTS documents (
+            id         INTEGER PRIMARY KEY,
+            compte_id  INTEGER NOT NULL REFERENCES comptes(id) ON DELETE CASCADE,
+            nom        TEXT NOT NULL,
             contenu    TEXT NOT NULL,
             modifie_le INTEGER NOT NULL)""")
+        b.execute("CREATE INDEX IF NOT EXISTS documents_du_compte ON documents (compte_id, modifie_le)")
+        # Ancienne table (un seul CV par compte) : son contenu devient le premier document.
+        if b.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'donnees'").fetchone():
+            b.execute("""INSERT INTO documents (compte_id, nom, contenu, modifie_le)
+                         SELECT compte_id, 'Mon CV', contenu, modifie_le FROM donnees""")
+            b.execute("DROP TABLE donnees")
     os.chmod(BASE, 0o600)
 
     # Clé qui signe les cookies de session. En production : variable CLE_SECRETE.
@@ -201,7 +212,7 @@ def etat():
     # Pour la page « Mon espace » : dates du compte et de la dernière sauvegarde du CV.
     with _base() as b:
         cree_le, vu_le = b.execute("SELECT cree_le, vu_le FROM comptes WHERE id = ?", (compte[0],)).fetchone()
-        sauvegarde = b.execute("SELECT modifie_le FROM donnees WHERE compte_id = ?", (compte[0],)).fetchone()
+        sauvegarde = b.execute("SELECT MAX(modifie_le) FROM documents WHERE compte_id = ?", (compte[0],)).fetchone()
     return jsonify(connecte=True, email=compte[1], cree_le=cree_le, vu_le=vu_le,
                    modifie_le=sauvegarde[0] if sauvegarde else None)
 
@@ -289,41 +300,179 @@ def deconnexion():
     return jsonify(connecte=False)
 
 
+# --------------------------------------------------------------------------
+# Documents du compte. Toutes les requêtes portent « compte_id = celui de la session » :
+# un compte ne peut ni lire, ni modifier, ni supprimer le document d'un autre.
+# --------------------------------------------------------------------------
+def _numero(valeur):
+    """Numéro de document reçu dans l'adresse ou le corps : entier positif, sinon None."""
+    try:
+        numero = int(valeur)
+    except (TypeError, ValueError):
+        return None
+    return numero if 0 < numero < 2 ** 62 else None
+
+
+def _contenu(donnees):
+    """dict -> texte JSON à enregistrer ; lève ValueError si invalide ou trop gros."""
+    if not isinstance(donnees, dict):
+        raise ValueError("Données invalides.")
+    contenu = json.dumps(donnees, ensure_ascii=False, separators=(",", ":"))
+    if len(contenu.encode("utf-8")) > DONNEES_MAX:
+        raise OverflowError("Données trop volumineuses pour être enregistrées dans ton compte.")
+    return contenu
+
+
+def _nom(valeur, defaut):
+    nom = " ".join(valeur.split())[:NOM_MAX] if isinstance(valeur, str) else ""
+    return nom or defaut
+
+
+def _creer(b, compte_id, nom, contenu):
+    """Ajoute un document ; None si le compte en a déjà le maximum."""
+    nombre = b.execute("SELECT COUNT(*) FROM documents WHERE compte_id = ?", (compte_id,)).fetchone()[0]
+    if nombre >= DOCUMENTS_MAX:
+        return None
+    maintenant = int(time.time())
+    curseur = b.execute("INSERT INTO documents (compte_id, nom, contenu, modifie_le) VALUES (?, ?, ?, ?)",
+                        (compte_id, _nom(nom, f"Document {nombre + 1}"), contenu, maintenant))
+    return curseur.lastrowid, maintenant
+
+
+def _trop_de_documents():
+    return jsonify(erreur=f"Tu as déjà {DOCUMENTS_MAX} documents dans ton compte. Supprimes-en un pour en ajouter."), 409
+
+
 @comptes.get("/donnees")
 def lire_donnees():
+    """Un document : celui demandé (?doc=…), sinon le plus récemment modifié."""
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
+    demande = request.args.get("doc")
     with _base() as b:
-        ligne = b.execute("SELECT contenu, modifie_le FROM donnees WHERE compte_id = ?", (compte[0],)).fetchone()
+        if demande is not None:
+            ligne = b.execute("SELECT id, nom, contenu, modifie_le FROM documents WHERE id = ? AND compte_id = ?",
+                              (_numero(demande), compte[0])).fetchone()
+            if not ligne:
+                return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
+        else:
+            ligne = b.execute("""SELECT id, nom, contenu, modifie_le FROM documents WHERE compte_id = ?
+                                 ORDER BY modifie_le DESC, id DESC LIMIT 1""", (compte[0],)).fetchone()
     if not ligne:
-        return jsonify(donnees=None, modifie_le=None)
-    return jsonify(donnees=json.loads(ligne[0]), modifie_le=ligne[1])
+        return jsonify(donnees=None, modifie_le=None, doc=None)
+    return jsonify(doc=ligne[0], nom=ligne[1], donnees=json.loads(ligne[2]), modifie_le=ligne[3])
 
 
 @comptes.put("/donnees")
 def ecrire_donnees():
+    """Enregistre un document : celui indiqué (?doc=…) ; sans numéro, le plus récent,
+    ou un nouveau si le compte n'en a pas ou si « nouveau » est demandé."""
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
-    donnees = _corps().get("donnees")
-    if not isinstance(donnees, dict):
-        return jsonify(erreur="Données invalides."), 400
-    contenu = json.dumps(donnees, ensure_ascii=False, separators=(",", ":"))
-    if len(contenu.encode("utf-8")) > DONNEES_MAX:
-        return jsonify(erreur="Données trop volumineuses pour être enregistrées dans ton compte."), 413
+    corps = _corps()
+    try:
+        contenu = _contenu(corps.get("donnees"))
+    except OverflowError as e:
+        return jsonify(erreur=str(e)), 413
+    except ValueError as e:
+        return jsonify(erreur=str(e)), 400
+    demande = request.args.get("doc")
     maintenant = int(time.time())
     with _base() as b:
-        b.execute("""INSERT INTO donnees (compte_id, contenu, modifie_le) VALUES (?, ?, ?)
-                     ON CONFLICT(compte_id) DO UPDATE SET contenu = excluded.contenu,
-                                                          modifie_le = excluded.modifie_le""",
-                  (compte[0], contenu, maintenant))
-    return jsonify(modifie_le=maintenant)
+        if demande is not None:
+            numero = _numero(demande)
+        elif corps.get("nouveau") is True:
+            numero = None
+        else:
+            ligne = b.execute("""SELECT id FROM documents WHERE compte_id = ?
+                                 ORDER BY modifie_le DESC, id DESC LIMIT 1""", (compte[0],)).fetchone()
+            numero = ligne[0] if ligne else None
+        if numero is None and demande is None:
+            cree = _creer(b, compte[0], corps.get("nom"), contenu)
+            if cree is None:
+                return _trop_de_documents()
+            return jsonify(doc=cree[0], modifie_le=cree[1]), 201
+        modifies = b.execute("UPDATE documents SET contenu = ?, modifie_le = ? WHERE id = ? AND compte_id = ?",
+                             (contenu, maintenant, numero, compte[0])).rowcount
+    if not modifies:
+        return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
+    return jsonify(doc=numero, modifie_le=maintenant)
+
+
+@comptes.get("/documents")
+def lister_documents():
+    """Tous les documents du compte, du plus récent au plus ancien. La photo, lourde,
+    n'est pas renvoyée ici (seulement son existence) : elle l'est avec le document lui-même."""
+    compte = compte_connecte()
+    if not compte:
+        return _non_connecte()
+    with _base() as b:
+        lignes = b.execute("""SELECT id, nom, contenu, modifie_le FROM documents WHERE compte_id = ?
+                              ORDER BY modifie_le DESC, id DESC""", (compte[0],)).fetchall()
+    documents = []
+    for numero, nom, contenu, modifie_le in lignes:
+        donnees = json.loads(contenu)
+        cv = donnees.get("cv")
+        if isinstance(cv, dict) and cv.get("photo"):
+            donnees["cv"] = {**cv, "photo": "", "a_une_photo": True}
+        documents.append({"doc": numero, "nom": nom, "modifie_le": modifie_le, "donnees": donnees})
+    return jsonify(documents=documents, maximum=DOCUMENTS_MAX)
+
+
+@comptes.post("/documents")
+def creer_document():
+    """Nouveau document : vide, ou copie d'un document existant (« copie_de »)."""
+    compte = compte_connecte()
+    if not compte:
+        return _non_connecte()
+    corps = _corps()
+    with _base() as b:
+        contenu, nom = "{}", corps.get("nom")
+        if corps.get("copie_de") is not None:
+            source = b.execute("SELECT nom, contenu FROM documents WHERE id = ? AND compte_id = ?",
+                               (_numero(corps.get("copie_de")), compte[0])).fetchone()
+            if not source:
+                return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
+            contenu, nom = source[1], nom or f"{source[0]} (copie)"
+        cree = _creer(b, compte[0], nom, contenu)
+    if cree is None:
+        return _trop_de_documents()
+    return jsonify(doc=cree[0], modifie_le=cree[1]), 201
+
+
+@comptes.patch("/documents/<int:numero>")
+def renommer_document(numero):
+    compte = compte_connecte()
+    if not compte:
+        return _non_connecte()
+    nom = _nom(_corps().get("nom"), "")
+    if not nom:
+        return jsonify(erreur="Donne un nom à ce document."), 400
+    with _base() as b:
+        modifies = b.execute("UPDATE documents SET nom = ? WHERE id = ? AND compte_id = ?",
+                             (nom, numero, compte[0])).rowcount
+    if not modifies:
+        return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
+    return jsonify(doc=numero, nom=nom)
+
+
+@comptes.delete("/documents/<int:numero>")
+def supprimer_document(numero):
+    compte = compte_connecte()
+    if not compte:
+        return _non_connecte()
+    with _base() as b:
+        supprimes = b.execute("DELETE FROM documents WHERE id = ? AND compte_id = ?", (numero, compte[0])).rowcount
+    if not supprimes:
+        return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
+    return jsonify(supprime=numero)
 
 
 @comptes.delete("")
 def supprimer():
-    """Supprime le compte ET le CV enregistré. Le mot de passe est redemandé."""
+    """Supprime le compte ET tous ses documents. Le mot de passe est redemandé."""
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
@@ -337,7 +486,7 @@ def supprimer():
         _noter(*cles)
         return jsonify(erreur="Mot de passe incorrect."), 401
     with _base() as b:
-        b.execute("DELETE FROM comptes WHERE id = ?", (compte[0],))   # les données suivent (CASCADE)
+        b.execute("DELETE FROM comptes WHERE id = ?", (compte[0],))   # les documents suivent (CASCADE)
     _oublier(("email", compte[1]))
     session.clear()
     current_app.logger.info("Compte supprimé.")       # sans l'adresse : rien de personnel dans les journaux

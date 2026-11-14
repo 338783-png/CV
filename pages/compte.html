@@ -33,34 +33,15 @@
   <p id="espace-message" class="espace-message" role="status" hidden></p>
 
   <div class="espace-grille">
-    <!-- Documents -->
+    <!-- Documents : un dossier = un CV et sa lettre. La liste est dessinée par espace.js. -->
     <article class="carte-espace large">
-      <h2>Mes documents</h2>
-      <p class="note" id="docs-vide" hidden>Tu n'as pas encore de CV enregistré dans ton compte. Il le sera automatiquement dès que tu commenceras à le remplir.</p>
-      <div id="docs">
-        <div class="doc">
-          <div>
-            <strong>CV</strong> <span class="puce-modele" id="cv-modele"></span>
-            <p id="cv-resume" translate="no"></p>
-            <div class="jauge-espace"><progress id="cv-progres" max="100" value="0"></progress><span id="cv-progres-texte"></span></div>
-          </div>
-          <div class="doc-actions">
-            <a class="bouton principal" href="{{ p }}/creer">Modifier</a>
-            <button type="button" class="bouton" id="cv-pdf">Télécharger le PDF</button>
-          </div>
-        </div>
-        <div class="doc">
-          <div>
-            <strong>Lettre de motivation</strong> <span class="puce-modele" id="lettre-modele"></span>
-            <p id="lettre-resume"></p>
-          </div>
-          <div class="doc-actions">
-            <a class="bouton principal" href="{{ p }}/creer?type=lettre">Modifier</a>
-            <button type="button" class="bouton" id="lettre-pdf">Télécharger le PDF</button>
-          </div>
-        </div>
+      <div class="docs-tete">
+        <h2>Mes documents</h2>
+        <button type="button" class="bouton principal" id="docs-nouveau">Nouveau document</button>
       </div>
-      <p class="note" id="docs-date"></p>
+      <p class="note">Un document réunit un CV et sa lettre de motivation. Crées-en un par offre ou par langue : tu peux en garder <span id="docs-maximum">10</span>.</p>
+      <p class="note" id="docs-vide" hidden>Tu n'as pas encore de CV enregistré dans ton compte. Il le sera automatiquement dès que tu commenceras à le remplir.</p>
+      <div id="docs"></div>
       <a class="bouton principal" id="docs-creer" href="{{ p }}/creer" hidden>Créer mon CV</a>
     </article>
 

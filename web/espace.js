@@ -8,7 +8,7 @@ const CLE_STOCKAGE = "cv-saas-v1", CLE_SYNCHRO = "cv-saas-synchro";   // les mê
 const $ = sel => document.querySelector(sel);
 const MODELES = { moderne: "Moderne", classique: "Classique", europeen: "Européen", africain: "Africain", epure: "Épurée" };
 const PARTIES = ["accroche", "parcours", "entreprise", "conclusion"];
-let donnees = null;          // le CV enregistré dans le compte
+let documents = [];         // les documents du compte : { doc, nom, modifie_le, donnees (sans la photo) }
 let inscription = false;
 
 async function api(methode, chemin, corps) {
@@ -70,7 +70,7 @@ async function envoyerLocal() {
   const r = await api("GET", "/donnees");
   if (!r.ok || r.corps.donnees) return;
   const e = await api("PUT", "/donnees", { donnees: local });
-  if (e.ok) { try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify({ vu: e.corps.modifie_le, sale: false })); } catch { /* idem */ } }
+  if (e.ok) { try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify({ doc: e.corps.doc, vu: e.corps.modifie_le, sale: false })); } catch { /* idem */ } }
 }
 
 // ---------- Espace du visiteur connecté ----------
@@ -94,30 +94,123 @@ function afficherEspace(compte) {
   $("#profil-cree").textContent = date(compte.cree_le);
   $("#profil-vu").textContent = date(compte.vu_le, true);
 
-  const cv = donnees && typeof donnees.cv === "object" && donnees.cv ? donnees.cv : null;
-  const aUnCv = !!(cv && texte(cv.nom));
-  $("#docs").hidden = !aUnCv;
-  $("#docs-vide").hidden = aUnCv;
-  $("#docs-creer").hidden = aUnCv;
-  $("#docs-date").textContent = aUnCv ? `Dernier enregistrement : ${date(compte.modifie_le, true)}` : "";
-  $("#donnees-copie").disabled = !donnees;
-  if (!aUnCv) return;
+  dessinerDocuments();
+}
 
+/** Petit fabricant d'éléments : el("button", { className: "bouton" }, "Texte"). */
+function el(balise, proprietes, ...enfants) {
+  const e = Object.assign(document.createElement(balise), proprietes || {});
+  e.append(...enfants);
+  return e;
+}
+
+function dessinerDocuments() {
+  const remplis = documents.filter(d => d.donnees && d.donnees.cv && texte(d.donnees.cv.nom));
+  $("#docs-vide").hidden = documents.length > 0;
+  $("#docs-creer").hidden = documents.length > 0;
+  $("#donnees-copie").disabled = !documents.length;
+  $("#docs").replaceChildren(...documents.map(dessinerDocument));
+  return remplis.length;
+}
+
+function dessinerDocument(d) {
+  const donnees = d.donnees && typeof d.donnees === "object" ? d.donnees : {};
+  const cv = donnees.cv && typeof donnees.cv === "object" ? donnees.cv : {};
   const options = donnees.options && typeof donnees.options === "object" ? donnees.options : {};
   const lettre = donnees.lettre && typeof donnees.lettre === "object" ? donnees.lettre : {};
-  $("#cv-modele").textContent = "Modèle " + (MODELES[options.modele] || "Classique");
-  $("#cv-resume").textContent = [texte(cv.nom), texte(cv.titre)].filter(Boolean).join(" · ");
-  const pourcent = progression(cv);
-  $("#cv-progres").value = pourcent;
-  $("#cv-progres-texte").textContent = pourcent === 100 ? "CV complet" : `Complété à ${pourcent} %`;
-
+  const aUnCv = !!texte(cv.nom);
   const corps = texteLettre(lettre);
   const mots = corps.split(/\s+/).filter(Boolean).length;
-  $("#lettre-modele").textContent = corps ? "Modèle " + (MODELES[options.modele_lettre] || "Classique") : "";
-  $("#lettre-resume").textContent = corps
-    ? [texte(lettre.objet) || "Sans objet", `${mots} mots`].join(" · ")
-    : "Pas encore écrite.";
-  $("#lettre-pdf").disabled = !corps;
+  const pourcent = progression(cv);
+  const ouvrir = (window.PREFIXE_SITE || "") + "/creer?doc=" + d.doc;
+  const bouton = (libelle, action, classe) => {
+    const b = el("button", { type: "button", className: classe || "mini" }, libelle);
+    b.addEventListener("click", () => action(b));
+    return b;
+  };
+
+  const nom = el("strong", { className: "dossier-nom" }, d.nom);
+  nom.setAttribute("translate", "no");                    // nom choisi par l'utilisateur : jamais traduit
+  const resume = el("p", { className: "cv-resume" }, aUnCv ? [texte(cv.nom), texte(cv.titre)].filter(Boolean).join(" · ") : "");
+  resume.setAttribute("translate", "no");
+  const resumeLettre = el("p", { className: "lettre-resume" });
+  if (corps) {
+    const objet = el("span", null, texte(lettre.objet));
+    objet.setAttribute("translate", "no");
+    resumeLettre.append(...(texte(lettre.objet) ? [objet, " · "] : []), `${mots} mots`);
+  } else resumeLettre.append("Pas encore écrite.");
+
+  const pdfCv = bouton("Télécharger le PDF", b => telechargerPdf(d.doc, "cv", b), "bouton cv-pdf");
+  pdfCv.disabled = !aUnCv;
+  const pdfLettre = bouton("Télécharger le PDF", b => telechargerPdf(d.doc, "lettre", b), "bouton lettre-pdf");
+  pdfLettre.disabled = !corps || !aUnCv;
+
+  return el("section", { className: "dossier" },
+    el("div", { className: "dossier-tete" },
+      el("div", null, nom, el("p", { className: "note dossier-date" }, `Dernier enregistrement : ${date(d.modifie_le, true)}`)),
+      el("div", { className: "dossier-actions" },
+        bouton("Renommer", () => renommer(d)), bouton("Dupliquer", () => dupliquer(d)), bouton("Supprimer", () => supprimer(d)))),
+    el("div", { className: "doc" },
+      el("div", null,
+        el("strong", null, "CV"), " ",
+        el("span", { className: "puce-modele cv-modele" }, aUnCv ? "Modèle " + (MODELES[options.modele] || "Classique") : ""),
+        aUnCv ? resume : el("p", { className: "cv-resume" }, "Pas encore rempli."),
+        el("div", { className: "jauge-espace" },
+          el("progress", { max: 100, value: pourcent }),
+          el("span", { className: "cv-progres-texte" }, pourcent === 100 ? "CV complet" : `Complété à ${pourcent} %`))),
+      el("div", { className: "doc-actions" }, el("a", { className: "bouton principal", href: ouvrir }, "Modifier"), pdfCv)),
+    el("div", { className: "doc" },
+      el("div", null,
+        el("strong", null, "Lettre de motivation"), " ",
+        el("span", { className: "puce-modele lettre-modele" }, corps ? "Modèle " + (MODELES[options.modele_lettre] || "Classique") : ""),
+        resumeLettre),
+      el("div", { className: "doc-actions" }, el("a", { className: "bouton principal", href: ouvrir + "&type=lettre" }, "Modifier"), pdfLettre)));
+}
+
+async function chargerDocuments() {
+  const r = await api("GET", "/documents");
+  documents = r.ok ? r.corps.documents : [];
+  if (r.ok) $("#docs-maximum").textContent = r.corps.maximum;
+  dessinerDocuments();
+}
+
+// ---------- Gérer ses documents ----------
+$("#docs-nouveau").addEventListener("click", async () => {
+  message("");
+  const nom = prompt("Nom du nouveau document (par exemple le poste visé) :", "");
+  if (nom === null) return;
+  const r = await api("POST", "/documents", { nom });
+  if (!r.ok) return message(r.corps.erreur || "Création impossible. Réessaie.");
+  location.href = (window.PREFIXE_SITE || "") + "/creer?doc=" + r.corps.doc;
+});
+
+async function renommer(d) {
+  const nom = prompt("Nouveau nom du document :", d.nom);
+  if (nom === null || !nom.trim() || nom.trim() === d.nom) return;
+  const r = await api("PATCH", "/documents/" + d.doc, { nom });
+  message(r.ok ? "" : r.corps.erreur || "Changement de nom impossible. Réessaie.");
+  await chargerDocuments();
+}
+
+async function dupliquer(d) {
+  const r = await api("POST", "/documents", { copie_de: d.doc });
+  message(r.ok ? "Le document a été dupliqué. Tu peux maintenant adapter la copie à une autre offre."
+               : r.corps.erreur || "Copie impossible. Réessaie.");
+  await chargerDocuments();
+}
+
+async function supprimer(d) {
+  if (!confirm("Supprimer définitivement ce document (son CV et sa lettre) ?")) return;
+  const r = await api("DELETE", "/documents/" + d.doc, {});
+  if (r.ok) {
+    // Si c'était le document ouvert dans l'éditeur sur cet appareil, on l'en retire aussi.
+    try {
+      const sync = JSON.parse(localStorage.getItem(CLE_SYNCHRO)) || {};
+      if (sync.doc === d.doc) { localStorage.removeItem(CLE_STOCKAGE); localStorage.removeItem(CLE_SYNCHRO); }
+    } catch { /* stockage indisponible */ }
+  }
+  message(r.ok ? "Le document a été supprimé." : r.corps.erreur || "Suppression impossible. Réessaie.");
+  await chargerDocuments();
 }
 
 async function charger() {
@@ -127,9 +220,8 @@ async function charger() {
   $("#espace-porte").hidden = connecte;
   $("#espace").hidden = !connecte;
   if (!connecte) { afficherPorte(); return; }
-  const d = await api("GET", "/donnees");
-  donnees = d.ok ? d.corps.donnees : null;
   afficherEspace(r.corps);
+  await chargerDocuments();
   // L'en-tête (entete.js) a pu être dessiné avant la connexion : on le met à jour.
   for (const lien of document.querySelectorAll("a[data-lien-compte]")) {
     const pastille = document.createElement("span");
@@ -140,9 +232,12 @@ async function charger() {
 }
 
 // ---------- Télécharger un PDF directement depuis l'espace ----------
-async function telechargerPdf(type, bouton) {
+async function telechargerPdf(numero, type, bouton) {
   bouton.disabled = true; message("");
   try {
+    const d = await api("GET", "/donnees?doc=" + numero);
+    if (!d.ok) throw new Error(d.corps.erreur || "Ce document n'a pas pu être chargé.");
+    const donnees = d.corps.donnees;
     const r = await fetch("/api/pdf", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, cv: donnees.cv, lettre: donnees.lettre, options: donnees.options }),
@@ -159,10 +254,14 @@ function enregistrer(blob, nom) {
   document.body.append(lien); lien.click(); lien.remove();
   setTimeout(() => URL.revokeObjectURL(lien.href), 1000);
 }
-$("#cv-pdf").addEventListener("click", e => telechargerPdf("cv", e.currentTarget));
-$("#lettre-pdf").addEventListener("click", e => telechargerPdf("lettre", e.currentTarget));
-$("#donnees-copie").addEventListener("click", () => {
-  enregistrer(new Blob([JSON.stringify(donnees, null, 2)], { type: "application/json" }), "mes-donnees-cv.json");
+// Copie de toutes les données du compte : chaque document en entier, photo comprise.
+$("#donnees-copie").addEventListener("click", async () => {
+  const copie = [];
+  for (const d of documents) {
+    const r = await api("GET", "/donnees?doc=" + d.doc);
+    if (r.ok) copie.push({ nom: r.corps.nom, modifie_le: r.corps.modifie_le, ...r.corps.donnees });
+  }
+  enregistrer(new Blob([JSON.stringify({ documents: copie }, null, 2)], { type: "application/json" }), "mes-donnees-cv.json");
 });
 
 // ---------- Mot de passe, déconnexion, suppression ----------
@@ -184,7 +283,7 @@ $("#espace-deconnexion").addEventListener("click", async () => {
   try {
     const s = JSON.parse(localStorage.getItem(CLE_SYNCHRO)) || {};
     const local = JSON.parse(localStorage.getItem(CLE_STOCKAGE));
-    if (s.sale && local) await api("PUT", "/donnees", { donnees: local });
+    if (s.sale && local) await api("PUT", "/donnees" + (s.doc ? "?doc=" + s.doc : ""), { donnees: local, nouveau: !s.doc });
   } catch { /* rien à envoyer */ }
   await api("POST", "/deconnexion", {});
   // Ordinateur partagé : après la déconnexion, il ne reste rien sur cet appareil.
