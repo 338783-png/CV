@@ -42,6 +42,8 @@ MODELES_LETTRE = {
     "classique": "Classique (présentation française traditionnelle)",
     "epure": "Épurée (en-tête centré, filet de couleur)",
 }
+# Les quatre parties du texte d'une lettre, dans l'ordre où elles sont imprimées.
+PARTIES_LETTRE = ("accroche", "parcours", "entreprise", "conclusion")
 LANGUES = ("fr", "en", "it")
 COULEUR_DEFAUT = "1F4E79"
 
@@ -440,7 +442,11 @@ def preparer_lettre(brut, lettre, options=None):
     l = _dico(lettre)
     dest = _dico(l.get("destinataire"))
 
-    corps = _lignes(l.get("corps"), 30, 2000)
+    # Le texte arrive en quatre parties (formulaire guidé) et/ou en un seul bloc « corps »
+    # (anciennes sauvegardes, ligne de commande) : on les met bout à bout, dans l'ordre.
+    parties = _dico(l.get("parties"))
+    corps = [ligne for cle in PARTIES_LETTRE for ligne in _lignes(parties.get(cle), 10, 2000)]
+    corps = (corps + _lignes(l.get("corps"), 30, 2000))[:30]
     if not corps:
         raise ErreurDonnees("Le texte de la lettre est vide.")
 

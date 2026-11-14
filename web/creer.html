@@ -44,6 +44,16 @@
           <img src="img/modele_africain.png" alt="" loading="lazy"><span>Africain</span></label>
       </fieldset>
       <p class="conseil pour-cv" id="conseil-modele"></p>
+      <fieldset class="choix-modele pour-lettre" hidden>
+        <legend>Modèle de lettre</legend>
+        <label><input type="radio" name="modele_lettre" value="classique" data-k="options.modele_lettre">
+          <img src="img/lettre_classique.png" alt="" loading="lazy"><span>Classique</span></label>
+        <label><input type="radio" name="modele_lettre" value="moderne" data-k="options.modele_lettre">
+          <img src="img/lettre_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
+        <label><input type="radio" name="modele_lettre" value="epure" data-k="options.modele_lettre">
+          <img src="img/lettre_epure.png" alt="" loading="lazy"><span>Épurée</span></label>
+      </fieldset>
+      <p class="conseil pour-lettre" hidden>Choisis le même style et la même couleur que ton CV : les deux documents iront ensemble. Ton nom et tes coordonnées viennent de la rubrique « Identité ».</p>
       <div class="grille">
         <fieldset class="choix-couleur">
           <legend>Couleur</legend>
@@ -118,7 +128,7 @@
     <!-- ===================== Lettre ===================== -->
     <div class="pour-lettre" hidden>
       <details open>
-        <summary>Destinataire</summary>
+        <summary>Destinataire <small>à qui tu écris</small></summary>
         <div class="grille">
           <label>Nom ou fonction<input data-k="lettre.destinataire.nom" maxlength="120" placeholder="Madame la Directrice des RH"></label>
           <label>Entreprise<input data-k="lettre.destinataire.entreprise" maxlength="160"></label>
@@ -128,21 +138,41 @@
         </div>
       </details>
       <details open>
-        <summary>Lettre</summary>
+        <summary>Lieu, date et objet</summary>
         <div class="grille">
-          <label>Fait à<input data-k="lettre.lieu" maxlength="80"></label>
+          <label>Fait à<input data-k="lettre.lieu" maxlength="80" placeholder="Dakar"></label>
           <label>Date<input data-k="lettre.date" maxlength="60"></label>
-          <label class="large">Objet<input data-k="lettre.objet" maxlength="300" placeholder="Candidature au poste de…"></label>
+          <label class="large">Objet <small>le poste, et la référence de l'annonce s'il y en a une</small>
+            <input data-k="lettre.objet" maxlength="300" placeholder="Candidature au poste de…"></label>
+        </div>
+      </details>
+      <details open>
+        <summary>Texte de la lettre *</summary>
+        <p class="conseil">Une bonne lettre tient sur une page et suit quatre temps. Remplis-les dans l'ordre : chaque case devient un paragraphe.</p>
+        <button type="button" id="btn-trame" class="ajouter">Pré-remplir avec des phrases à compléter</button>
+        <div class="grille espace-haut">
           <label class="large">Formule d'appel<input data-k="lettre.salutation" maxlength="160"></label>
-          <label class="large">Texte de la lettre * <small>un retour à la ligne = un nouveau paragraphe</small>
-            <textarea data-k="lettre.corps" rows="12" maxlength="8000"></textarea>
+          <label class="large">Accroche <small>pourquoi tu écris : le poste visé, ta situation actuelle</small>
+            <textarea data-k="lettre.parties.accroche" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label class="large">Ton parcours <small>formation, expériences, un ou deux résultats chiffrés en lien avec le poste</small>
+            <textarea data-k="lettre.parties.parcours" rows="5" maxlength="2000"></textarea>
+          </label>
+          <label class="large">L'entreprise et toi <small>pourquoi cette entreprise, ce que tu peux lui apporter</small>
+            <textarea data-k="lettre.parties.entreprise" rows="4" maxlength="2000"></textarea>
+          </label>
+          <label class="large">Conclusion <small>propose un entretien</small>
+            <textarea data-k="lettre.parties.conclusion" rows="2" maxlength="2000"></textarea>
           </label>
           <label class="large">Formule de politesse
             <textarea data-k="lettre.formule" rows="2" maxlength="600"></textarea>
           </label>
-          <label class="large">Pièces jointes<input data-k="lettre.pj" maxlength="300" placeholder="CV"></label>
         </div>
-        <button type="button" id="btn-trame" class="ajouter">Insérer une trame de lettre à compléter</button>
+        <p class="conseil" id="longueur-lettre" role="status"></p>
+      </details>
+      <details open>
+        <summary>Pièces jointes <small>facultatif</small></summary>
+        <label>Documents joints à la lettre<input data-k="lettre.pj" maxlength="300" placeholder="Curriculum vitae"></label>
       </details>
     </div>
   </form>

@@ -46,26 +46,41 @@ const ETAPES = [
   [cv => cv.profil.trim(), "quelques lignes de profil"],
 ];
 
+const PARTIES_LETTRE = ["accroche", "parcours", "entreprise", "conclusion"];
+const MODELES_LETTRE = ["classique", "moderne", "epure"];
 const TEXTES_LETTRE = {
   fr: { salutation: "Madame, Monsieur,",
         formule: "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
-        trame: "Actuellement [ta situation], je vous adresse ma candidature au poste de [poste] au sein de [entreprise].\n\n[Ce que tu as fait : formation, expériences, résultats concrets en lien avec le poste.]\n\n[Pourquoi cette entreprise, et ce que tu peux lui apporter.]\n\nJe me tiens à votre disposition pour un entretien afin de vous exposer plus en détail ma motivation." },
+        trame: {
+          accroche: "Actuellement [ta situation], je vous adresse ma candidature au poste de [poste] au sein de [entreprise].",
+          parcours: "[Ce que tu as fait : formation, expériences, résultats concrets en lien avec le poste.]",
+          entreprise: "[Pourquoi cette entreprise, et ce que tu peux lui apporter.]",
+          conclusion: "Je me tiens à votre disposition pour un entretien afin de vous exposer plus en détail ma motivation." } },
   en: { salutation: "Dear Sir or Madam,",
         formule: "Yours faithfully,",
-        trame: "I am writing to apply for the position of [position] at [company].\n\n[What you have done: education, experience, concrete results relevant to the role.]\n\n[Why this company, and what you can bring to it.]\n\nI would welcome the opportunity to discuss my application with you in an interview." },
+        trame: {
+          accroche: "I am writing to apply for the position of [position] at [company].",
+          parcours: "[What you have done: education, experience, concrete results relevant to the role.]",
+          entreprise: "[Why this company, and what you can bring to it.]",
+          conclusion: "I would welcome the opportunity to discuss my application with you in an interview." } },
   it: { salutation: "Gentili Signori,",
         formule: "In attesa di un Vostro cortese riscontro, porgo distinti saluti.",
-        trame: "Con la presente desidero candidarmi per la posizione di [posizione] presso [azienda].\n\n[Cosa hai fatto: formazione, esperienze, risultati concreti legati al ruolo.]\n\n[Perché questa azienda e cosa puoi offrirle.]\n\nResto a disposizione per un colloquio conoscitivo." },
+        trame: {
+          accroche: "Con la presente desidero candidarmi per la posizione di [posizione] presso [azienda].",
+          parcours: "[Cosa hai fatto: formazione, esperienze, risultati concreti legati al ruolo.]",
+          entreprise: "[Perché questa azienda e cosa puoi offrirle.]",
+          conclusion: "Resto a disposizione per un colloquio conoscitivo." } },
 };
 
 function etatVide() {
   return {
     type: "cv",
-    options: { modele: "moderne", langue: "fr", couleur: "1F4E79", certifier: false },
+    options: { modele: "moderne", modele_lettre: "classique", langue: "fr", couleur: "1F4E79", certifier: false },
     cv: { nom: "", titre: "", email: "", telephone: "", ville: "", etat_civil: {}, profil: "",
           experiences: [{}], formations: [{}], competences: [{}], langues: [{}], liens: [],
           interets: "", references: [], photo: "" },
-    lettre: { destinataire: {}, lieu: "", objet: "", corps: "", pj: "",
+    lettre: { destinataire: {}, lieu: "", objet: "", pj: "",
+              parties: { accroche: "", parcours: "", entreprise: "", conclusion: "" },
               date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
               salutation: TEXTES_LETTRE.fr.salutation, formule: TEXTES_LETTRE.fr.formule },
   };
@@ -89,6 +104,7 @@ function fusionner(source) {
     }
   }
   if (!MODELES.includes(e.options.modele)) e.options.modele = modele.options.modele;
+  if (!MODELES_LETTRE.includes(e.options.modele_lettre)) e.options.modele_lettre = modele.options.modele_lettre;
   for (const nom of Object.keys(LISTES)) {
     const liste = Array.isArray(e.cv[nom]) ? e.cv[nom] : [];
     e.cv[nom] = liste.filter(x => x && typeof x === "object").map(x => ({ ...x }));
@@ -101,7 +117,27 @@ function fusionner(source) {
     const v = e[bloc][cle];
     e[bloc][cle] = v && typeof v === "object" && !Array.isArray(v) ? { ...v } : {};
   }
+  // Texte de la lettre : quatre parties, chacune une chaîne.
+  const recues = e.lettre.parties && typeof e.lettre.parties === "object" ? e.lettre.parties : {};
+  e.lettre.parties = {};
+  for (const cle of PARTIES_LETTRE) e.lettre.parties[cle] = typeof recues[cle] === "string" ? recues[cle] : "";
+  // Ancienne sauvegarde : tout le texte était dans un seul champ « corps ». On le répartit
+  // (1er paragraphe = accroche, dernier = conclusion, le reste entre les deux).
+  if (typeof e.lettre.corps === "string" && e.lettre.corps.trim() && !texteLettre(e.lettre)) {
+    const paras = e.lettre.corps.split("\n").map(p => p.trim()).filter(Boolean);
+    const p = e.lettre.parties;
+    p.accroche = paras.shift() || "";
+    if (paras.length >= 2) p.conclusion = paras.pop();
+    if (paras.length >= 2) p.entreprise = paras.pop();
+    p.parcours = paras.join("\n");
+  }
+  delete e.lettre.corps;
   return e;
+}
+
+/** Le texte de la lettre, parties mises bout à bout ("" si rien n'est écrit). */
+function texteLettre(lettre) {
+  return PARTIES_LETTRE.map(cle => (lettre.parties[cle] || "").trim()).filter(Boolean).join("\n");
 }
 
 let etat = etatVide();
@@ -237,7 +273,23 @@ for (const b of $$(".onglets button")) {
   b.addEventListener("click", () => { etat.type = b.dataset.type; afficherType(); modifie(0); });
 }
 
+/** Sous le texte de la lettre : sa longueur, et ce qu'il reste à écrire. */
+function afficherLongueurLettre() {
+  const mots = texteLettre(etat.lettre).split(/\s+/).filter(Boolean).length;
+  const vides = PARTIES_LETTRE.filter(cle => !(etat.lettre.parties[cle] || "").trim()).length;
+  const reste = /\[[^\]]*\]/.test(texteLettre(etat.lettre));
+  let avis = "";
+  if (!mots) avis = "Vise 150 à 300 mots : assez pour convaincre, et tout tient sur une page.";
+  else if (reste) avis = `${mots} mots · remplace les passages entre [crochets] par ton texte.`;
+  else if (vides) avis = `${mots} mots · il reste ${vides} partie${vides > 1 ? "s" : ""} à écrire.`;
+  else if (mots < 120) avis = `${mots} mots · c'est un peu court : ajoute un exemple concret de ce que tu as réalisé.`;
+  else if (mots > 330) avis = `${mots} mots · c'est long : la lettre risque de dépasser une page, raccourcis.`;
+  else avis = `${mots} mots · bonne longueur.`;
+  $("#longueur-lettre").textContent = avis;
+}
+
 function afficherProgres() {
+  afficherLongueurLettre();
   const manquants = ETAPES.filter(([test]) => !test(etat.cv)).map(([, conseil]) => conseil);
   const pourcent = Math.round(100 * (ETAPES.length - manquants.length) / ETAPES.length);
   $("#progres").value = pourcent;
@@ -258,7 +310,7 @@ function montrerErreur(message) {
 
 function pret() {
   if (!etat.cv.nom.trim()) return "Renseigne ton nom pour voir l'aperçu.";
-  if (etat.type === "lettre" && !etat.lettre.corps.trim()) return "Écris le texte de la lettre pour voir l'aperçu.";
+  if (etat.type === "lettre" && !texteLettre(etat.lettre)) return "Écris le texte de la lettre pour voir l'aperçu.";
   return "";
 }
 
@@ -425,8 +477,8 @@ function adapterLangueLettre(langue) {
 }
 
 $("#btn-trame").addEventListener("click", () => {
-  if (etat.lettre.corps.trim() && !confirm("Remplacer le texte actuel de la lettre par la trame ?")) return;
-  etat.lettre.corps = (TEXTES_LETTRE[etat.options.langue] || TEXTES_LETTRE.fr).trame;
+  if (texteLettre(etat.lettre) && !confirm("Remplacer le texte actuel de la lettre par les phrases à compléter ?")) return;
+  etat.lettre.parties = { ...(TEXTES_LETTRE[etat.options.langue] || TEXTES_LETTRE.fr).trame };
   remplirChamps(); modifie();
 });
 
@@ -442,7 +494,10 @@ async function chargerExemple() {
   if (etat.cv.nom.trim() && !confirm("Remplacer tes données par l'exemple ?")) return;
   try {
     const exemple = await (await fetch("exemple.json")).json();
-    etat = fusionner({ type: etat.type, options: etat.options, lettre: etat.lettre, cv: exemple });
+    // L'exemple de lettre va avec l'exemple de CV (même personne) ; on garde la lettre
+    // déjà écrite s'il y en a une.
+    const lettre = texteLettre(etat.lettre) ? etat.lettre : await (await fetch("exemple_lettre.json")).json();
+    etat = fusionner({ type: etat.type, options: etat.options, lettre, cv: exemple });
     toutDessiner(); modifie(0);
   } catch {
     montrerErreur("Impossible de charger l'exemple.");

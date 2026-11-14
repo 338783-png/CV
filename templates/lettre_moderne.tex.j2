@@ -9,7 +9,7 @@
 
 % Le bandeau : un rectangle de couleur sur toute la largeur, en haut de la 1re page.
 \newlength{\hauteurbandeau}
-\setlength{\hauteurbandeau}{3.5cm}
+\setlength{\hauteurbandeau}{3.9cm}
 \AddToShipoutPictureBG*{\AtPageUpperLeft{%
   \raisebox{-\hauteurbandeau}{\color{accent}\rule{\paperwidth}{\hauteurbandeau}}}}
 
@@ -18,6 +18,7 @@
 % ---------- Expéditeur (dans le bandeau) ----------
 \begin{minipage}[t][\dimexpr\hauteurbandeau-1.1cm\relax][c]{\textwidth}
 \color{white}\raggedright
+\setlength{\parskip}{0pt}% sinon l'espace entre paragraphes pousse les coordonnées hors du bandeau
 {\fontsize{23}{27}\selectfont\bfseries \VAR{l.exp.nom}\par}
 \BLOCK{if l.exp.titre}
 \vspace{3pt}{\large \VAR{l.exp.titre}\par}
