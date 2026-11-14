@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Créer mon CV · CV.express</title>
   <meta name="robots" content="noindex">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="page-editeur">
 <header class="barre">
@@ -19,11 +19,24 @@
     <button type="button" id="btn-exporter" class="mini" title="Enregistrer mes données dans un fichier">Sauvegarder</button>
     <label class="mini" title="Reprendre des données enregistrées">Reprendre<input type="file" id="btn-importer" accept="application/json,.json" hidden></label>
     <button type="button" id="btn-vider" class="mini">Tout effacer</button>
+    <button type="button" id="btn-compte" class="mini compte">Se connecter</button>
+    <nav class="langues" data-langues aria-label="Langue du site"></nav>
   </div>
 </header>
 
 <main class="editeur">
   <form id="formulaire" autocomplete="off" novalidate>
+
+    <!-- Déjà un CV ou une lettre ? On le relit pour pré-remplir le formulaire. -->
+    <div class="import" id="import">
+      <div>
+        <strong id="import-titre">Tu as déjà un CV ?</strong>
+        <p id="import-texte">Envoie-le (PDF ou Word) : le formulaire se remplit tout seul, tu n'as plus qu'à corriger et choisir un modèle.</p>
+      </div>
+      <label class="bouton" id="import-bouton" tabindex="0"><span id="import-libelle">Importer mon CV</span>
+        <input type="file" id="import-fichier" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label>
+      <p id="import-message" class="import-message" role="status" hidden></p>
+    </div>
 
     <div class="jauge pour-cv">
       <progress id="progres" max="100" value="0" aria-labelledby="progres-texte"></progress>
@@ -35,23 +48,23 @@
       <fieldset class="choix-modele pour-cv">
         <legend>Modèle</legend>
         <label><input type="radio" name="modele" value="moderne" data-k="options.modele">
-          <img src="img/modele_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
+          <img src="/img/modele_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
         <label><input type="radio" name="modele" value="classique" data-k="options.modele">
-          <img src="img/modele_classique.png" alt="" loading="lazy"><span>Classique</span></label>
+          <img src="/img/modele_classique.png" alt="" loading="lazy"><span>Classique</span></label>
         <label><input type="radio" name="modele" value="europeen" data-k="options.modele">
-          <img src="img/modele_europeen.png" alt="" loading="lazy"><span>Européen</span></label>
+          <img src="/img/modele_europeen.png" alt="" loading="lazy"><span>Européen</span></label>
         <label><input type="radio" name="modele" value="africain" data-k="options.modele">
-          <img src="img/modele_africain.png" alt="" loading="lazy"><span>Africain</span></label>
+          <img src="/img/modele_africain.png" alt="" loading="lazy"><span>Africain</span></label>
       </fieldset>
       <p class="conseil pour-cv" id="conseil-modele"></p>
       <fieldset class="choix-modele pour-lettre" hidden>
         <legend>Modèle de lettre</legend>
         <label><input type="radio" name="modele_lettre" value="classique" data-k="options.modele_lettre">
-          <img src="img/lettre_classique.png" alt="" loading="lazy"><span>Classique</span></label>
+          <img src="/img/lettre_classique.png" alt="" loading="lazy"><span>Classique</span></label>
         <label><input type="radio" name="modele_lettre" value="moderne" data-k="options.modele_lettre">
-          <img src="img/lettre_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
+          <img src="/img/lettre_moderne.png" alt="" loading="lazy"><span>Moderne</span></label>
         <label><input type="radio" name="modele_lettre" value="epure" data-k="options.modele_lettre">
-          <img src="img/lettre_epure.png" alt="" loading="lazy"><span>Épurée</span></label>
+          <img src="/img/lettre_epure.png" alt="" loading="lazy"><span>Épurée</span></label>
       </fieldset>
       <p class="conseil pour-lettre" hidden>Choisis le même style et la même couleur que ton CV : les deux documents iront ensemble. Ton nom et tes coordonnées viennent de la rubrique « Identité ».</p>
       <div class="grille">
@@ -97,9 +110,9 @@
         <div class="grille">
           <label>Date de naissance<input data-k="cv.etat_civil.date_naissance" maxlength="120"></label>
           <label>Lieu de naissance<input data-k="cv.etat_civil.lieu_naissance" maxlength="120"></label>
-          <label>Nationalité<input data-k="cv.etat_civil.nationalite" maxlength="120"></label>
-          <label>Situation matrimoniale<input data-k="cv.etat_civil.situation" maxlength="120"></label>
-          <label>Permis de conduire<input data-k="cv.etat_civil.permis" maxlength="120"></label>
+          <label>Nationalité<input data-k="cv.etat_civil.nationalite" maxlength="120" data-suggere="nationalites"></label>
+          <label>Situation matrimoniale<select data-k="cv.etat_civil.situation" data-choix="situations"></select></label>
+          <label>Permis de conduire<input data-k="cv.etat_civil.permis" maxlength="120" data-suggere="permis"></label>
         </div>
       </details>
 
@@ -188,7 +201,7 @@
     </div>
     <p id="erreur" role="alert" hidden></p>
     <div id="vide" class="vide">
-      <img src="img/modele_moderne.png" alt="">
+      <img src="/img/modele_moderne.png" alt="">
       <p>Ton document s'affiche ici au fur et à mesure que tu remplis le formulaire.</p>
       <button type="button" id="btn-exemple-vide" class="bouton">Voir avec un exemple</button>
     </div>
@@ -201,6 +214,43 @@
   <button type="button" id="btn-telecharger-bas" class="bouton principal" disabled>Télécharger le PDF</button>
 </div>
 
-<script src="app.js"></script>
+<!-- ===================== Compte (facultatif) ===================== -->
+<dialog id="dlg-compte" aria-labelledby="compte-titre">
+  <button type="button" class="fermer" id="compte-fermer" aria-label="Fermer">×</button>
+
+  <!-- Visiteur non connecté -->
+  <form id="compte-form" novalidate>
+    <h2 id="compte-titre">Se connecter</h2>
+    <p class="conseil" id="compte-intro">Retrouve ton CV et ta lettre depuis n'importe quel appareil.</p>
+    <label>Adresse e-mail<input type="email" id="compte-email" maxlength="120" autocomplete="username" required></label>
+    <label>Mot de passe <small id="compte-aide-mdp" hidden>8 caractères au minimum</small>
+      <input type="password" id="compte-mdp" minlength="8" maxlength="200" autocomplete="current-password" required></label>
+    <p class="conseil" id="compte-info-inscription" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>). Note bien ton mot de passe : il ne peut pas être récupéré pour l'instant.</p>
+    <p id="compte-erreur" class="erreur-compte" role="alert" hidden></p>
+    <button type="submit" class="bouton principal" id="compte-valider">Se connecter</button>
+    <p class="bascule"><span id="compte-question">Pas encore de compte ?</span>
+      <button type="button" class="lien" id="compte-bascule">Créer un compte</button></p>
+  </form>
+
+  <!-- Visiteur connecté -->
+  <div id="compte-connecte" hidden>
+    <h2>Mon compte</h2>
+    <p>Connecté en tant que <strong id="compte-qui" translate="no"></strong></p>
+    <p class="conseil" id="compte-synchro" role="status"></p>
+    <a class="bouton principal" href="/compte">Voir mon espace</a>
+    <button type="button" class="bouton" id="compte-deconnexion">Se déconnecter</button>
+    <p class="conseil">La déconnexion efface ton CV de cet appareil. Il reste enregistré dans ton compte.</p>
+    <details class="danger">
+      <summary>Supprimer mon compte</summary>
+      <p class="conseil">Ton compte et le CV enregistré sur nos serveurs seront effacés définitivement. Ce qui est sur cet appareil est conservé.</p>
+      <label>Confirme avec ton mot de passe<input type="password" id="compte-mdp-suppr" maxlength="200" autocomplete="current-password"></label>
+      <p id="compte-erreur-suppr" class="erreur-compte" role="alert" hidden></p>
+      <button type="button" class="bouton" id="compte-supprimer">Supprimer définitivement</button>
+    </details>
+  </div>
+</dialog>
+
+<script src="/traductions.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>

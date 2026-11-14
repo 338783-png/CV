@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titre %}Legal notice{% endblock %}
+{% block description %}Legal notice for the CV.express site: publisher, hosting provider, contact.{% endblock %}
+{% block tete %}<meta name="robots" content="noindex">{% endblock %}
+{% block contenu %}
+<h1>Legal notice</h1>
+
+<h2>Publisher of the site</h2>
+<p>{{ champ("nom", "nom et prénom, ou raison sociale et forme juridique") }}<br>
+{{ champ("adresse", "adresse postale") }}<br>
+{{ champ("email", "adresse e-mail de contact") }}
+{%- if editeur.immatriculation %}<br>
+Registration number: {{ editeur.immatriculation }}{% endif %}</p>
+<p>Publication director: {{ champ("directeur_publication", "nom") }}</p>
+
+<h2>Hosting provider</h2>
+<p>{{ champ("hebergeur_nom", "nom de l'hébergeur") }}<br>
+{{ champ("hebergeur_adresse", "adresse de l'hébergeur") }}<br>
+{{ champ("hebergeur_site", "site web de l'hébergeur") }}</p>
+
+<h2>Intellectual property</h2>
+<p>The design of the site and the document templates are the property of the publisher. The CVs and letters you create belong to you: you can use, print and share them freely.</p>
+
+<h2>Personal data</h2>
+<p>What we do with your information is explained in the <a href="{{ p }}/confidentialite">privacy policy</a>. In short: your CV stays in your browser, and is only stored on our servers if you create an account.</p>
+
+<h2>Contact</h2>
+<p>For any question or to report a problem: {{ champ("email", "adresse e-mail") }}.</p>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titre %}Cover letter: template and structure{% endblock %}
+{% block description %}How to write a cover letter for a job or an internship: layout, three-paragraph plan, closing formulas. Generate yours as a PDF.{% endblock %}
+{% block contenu %}
+<h1>Cover letter: the template that works</h1>
+<p class="chapeau">A good letter fits on one page and answers a single question: why you, for this job, in this company? Here is the expected layout and the plan to follow.</p>
+
+<h2>The layout</h2>
+<ul>
+  <li><strong>Top left</strong>: your name, address, phone and e-mail.</li>
+  <li><strong>On the right</strong>: the recipient's name or position, the company, its address.</li>
+  <li><strong>Place and date</strong>: “Dakar, 14 November 2026”.</li>
+  <li><strong>Subject</strong>: “Application for the position of…”, with the advert's reference if there is one.</li>
+  <li><strong>Greeting</strong>: “Dear Sir or Madam,”, or the person's name if you know it.</li>
+</ul>
+
+<h2>The three-paragraph plan</h2>
+<ol>
+  <li><strong>You</strong>: why this company and this position interest you. Show that you have done your research.</li>
+  <li><strong>Me</strong>: what you can do, with one or two precise examples from your education or your experience.</li>
+  <li><strong>Us</strong>: what you can bring, and your availability for an interview.</li>
+</ol>
+
+<h2>Example outline</h2>
+<blockquote>
+  <p>Dear Sir or Madam,</p>
+  <p>Currently [your situation], I am writing to apply for the position of [position] at [company], whose [what attracts you: activity, project, reputation].</p>
+  <p>During [education or experience], I [concrete achievement, with a figure if possible]. This experience allowed me to develop [skill useful for the position].</p>
+  <p>I would be glad to put these skills at the service of your team, and I am available for an interview at your convenience.</p>
+  <p>Yours faithfully,</p>
+</blockquote>
+
+<h2>Rules to follow</h2>
+<ul>
+  <li>One page, no more. Short sentences.</li>
+  <li>One letter per advert: do not send the same one to everybody.</li>
+  <li>Do not copy your CV: choose two examples and develop them.</li>
+  <li>No mistakes. Have it proofread.</li>
+  <li>For a job application handed in on site, some administrations ask for a handwritten letter: in that case, use the PDF as a draft to copy out.</li>
+</ul>
+
+<aside class="appel">
+  <p>The generator lays out your letter the French way (or in English, or in Italian) and offers an outline to complete.</p>
+  <a href="{{ p }}/creer?type=lettre" class="bouton principal grand">Write my letter</a>
+</aside>
+{% endblock %}

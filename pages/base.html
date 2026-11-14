@@ -1,11 +1,14 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ langue }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titre %}{% endblock %} · CV.express</title>
   <meta name="description" content="{% block description %}{% endblock %}">
   <link rel="canonical" href="{{ url_page }}">
+  {%- for code, _, _, adresse in versions %}
+  <link rel="alternate" hreflang="{{ code }}" href="{{ adresse }}">
+  {%- endfor %}
   <meta property="og:type" content="article">
   <meta property="og:title" content="{{ self.titre() }}">
   <meta property="og:description" content="{{ self.description() }}">
@@ -17,8 +20,12 @@
 <body class="page-texte">
 
 <header class="entete entete-page">
-  <a href="/" class="logo">CV<span>.</span>express</a>
-  <a href="/creer" class="bouton principal">Créer mon CV</a>
+  <a href="{{ p }}/" class="logo">CV<span>.</span>express</a>
+  <nav class="entete-actions" aria-label="{{ c.acces }}">
+    {% include "_langues.html" %}
+    <a href="{{ p }}/compte" class="bouton" data-lien-compte>{{ c.connexion }}</a>
+    <a href="{{ p }}/creer" class="bouton principal">{{ c.creer }}</a>
+  </nav>
 </header>
 
 <main class="article">
@@ -26,5 +33,8 @@
 </main>
 
 {% include "_pied.html" %}
+<script src="/traductions.js"></script>
+<script src="/entete.js"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

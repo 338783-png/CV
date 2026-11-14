@@ -1,0 +1,187 @@
+"""
+Textes du site dans ses trois langues : français (adresses sans préfixe), anglais (/en/…)
+et italien (/it/…).
+
+  - COMMUN  : en-tête et pied de page, partagés par toutes les pages ;
+  - ACCUEIL : la page d'accueil.
+
+Les guides et les pages légales, plus longs, ont un fichier par langue :
+pages/<nom>.html (français), pages/en/<nom>.html, pages/it/<nom>.html.
+L'éditeur et « Mon espace » sont traduits dans le navigateur (web/traductions.js).
+"""
+
+LANGUES_SITE = {"fr": "Français", "en": "English", "it": "Italiano"}
+
+COMMUN = {
+    "fr": {
+        "connexion": "Se connecter", "creer": "Créer mon CV", "acces": "Accès rapide", "langue": "Langue du site",
+        "pied": "Sans compte, tes données restent dans ton navigateur : rien n'est conservé sur le serveur.",
+        "pied_nav": "Guides et informations",
+        "liens": [("modele-cv-afrique", "CV en Afrique"), ("cv-europass", "CV européen"),
+                  ("cv-sans-experience", "CV sans expérience"), ("lettre-de-motivation", "Lettre de motivation"),
+                  ("mentions-legales", "Mentions légales"), ("confidentialite", "Confidentialité"),
+                  ("conditions", "Conditions d'utilisation")],
+    },
+    "en": {
+        "connexion": "Log in", "creer": "Create my CV", "acces": "Quick access", "langue": "Site language",
+        "pied": "Without an account, your data stays in your browser: nothing is kept on the server.",
+        "pied_nav": "Guides and information",
+        "liens": [("modele-cv-afrique", "CVs in Africa"), ("cv-europass", "European CV"),
+                  ("cv-sans-experience", "CV with no experience"), ("lettre-de-motivation", "Cover letter"),
+                  ("mentions-legales", "Legal notice"), ("confidentialite", "Privacy"),
+                  ("conditions", "Terms of use")],
+    },
+    "it": {
+        "connexion": "Accedi", "creer": "Crea il mio CV", "acces": "Accesso rapido", "langue": "Lingua del sito",
+        "pied": "Senza account, i tuoi dati restano nel tuo browser: sul server non viene conservato nulla.",
+        "pied_nav": "Guide e informazioni",
+        "liens": [("modele-cv-afrique", "CV in Africa"), ("cv-europass", "CV europeo"),
+                  ("cv-sans-experience", "CV senza esperienza"), ("lettre-de-motivation", "Lettera di presentazione"),
+                  ("mentions-legales", "Note legali"), ("confidentialite", "Privacy"),
+                  ("conditions", "Condizioni d'uso")],
+    },
+}
+
+ACCUEIL = {
+    "fr": {
+        "titre_page": "CV.express — ton CV et ta lettre de motivation en PDF",
+        "description": "Crée ton CV et ta lettre de motivation en PDF en quelques minutes. Modèles européens et africains, gratuit et sans inscription.",
+        "og_description": "Modèles de CV européens et africains, lettre de motivation incluse. Gratuit, sans inscription.",
+        "badge": "Gratuit · Sans inscription",
+        "h1": "Un CV qui donne envie de te <em>rappeler</em>.",
+        "accroche": "Remplis le formulaire, choisis ton modèle, télécharge ton PDF. Présentations européennes et africaines, lettre de motivation incluse.",
+        "exemple": "Voir un exemple",
+        "deja": "J'ai déjà un CV : l'importer",
+        "atouts": ["<strong>4 modèles</strong> soignés", "<strong>3 langues</strong> FR · EN · IT", "<strong>PDF</strong> prêt à envoyer"],
+        "style_titre": "Choisis ton style",
+        "style_texte": "Quatre présentations, six couleurs. Tu peux en changer à tout moment sans rien ressaisir.",
+        "ouvrir_titre": "Ouvrir l'exemple en PDF", "ouvrir": "Ouvrir le PDF", "utiliser": "Utiliser",
+        "modeles": [
+            ("moderne", "Moderne", "Aperçu du modèle moderne", "Bandeau de couleur et photo ronde. Pour se démarquer."),
+            ("classique", "Classique", "Aperçu du modèle classique", "Sobre, une colonne. Idéal pour les logiciels de tri (ATS)."),
+            ("europeen", "Européen", "Aperçu du modèle européen", "Inspiré d'Europass, attendu dans beaucoup de pays de l'UE."),
+            ("africain", "Africain", "Aperçu du modèle africain", "État civil complet, photo, références, mention sur l'honneur."),
+        ],
+        "etapes_titre": "Trois étapes, c'est tout",
+        "etapes": [
+            ("Remplis", "Ton parcours, tes compétences, tes langues. Tout est enregistré dans ton navigateur au fur et à mesure. Tu as déjà un CV ? Importe-le en PDF ou en Word."),
+            ("Choisis", "Modèle, couleur, langue du document. L'aperçu se met à jour pendant que tu écris."),
+            ("Télécharge", "Un PDF net, au format A4, prêt à être envoyé ou imprimé. La lettre de motivation suit le même chemin."),
+        ],
+        "commencer": "Commencer maintenant",
+        "guides_titre": "Des conseils selon ta situation",
+        "guides_texte": "Les usages ne sont pas les mêmes à Dakar, à Abidjan ou à Milan. Ces guides t'expliquent quoi mettre, et dans quel ordre.",
+        "guides": [
+            ("modele-cv-afrique", "CV en Afrique francophone", "État civil, photo, références : ce que les recruteurs attendent."),
+            ("cv-europass", "CV européen", "Structure Europass, niveaux de langue de A1 à C2, photo ou non."),
+            ("cv-sans-experience", "CV sans expérience", "Étudiant ou premier emploi : quoi écrire quand on débute."),
+            ("lettre-de-motivation", "Lettre de motivation", "La présentation attendue et le plan en trois paragraphes."),
+        ],
+        "faq_titre": "Questions fréquentes",
+        "faq": [
+            ("Est-ce vraiment gratuit ?", "Oui. Tu peux créer, modifier et télécharger ton CV et ta lettre de motivation en PDF sans payer et sans créer de compte."),
+            ("Faut-il créer un compte ?", "Non. Ce que tu saisis est enregistré dans ton navigateur : tu le retrouves en revenant sur le site depuis le même appareil. Si tu veux le retrouver aussi sur un autre appareil, tu peux créer un compte gratuit, mais ce n'est jamais obligatoire."),
+            ("J'ai déjà un CV. Dois-je tout retaper ?", "Non. Dans l'éditeur, clique sur « Importer mon CV » et envoie ton fichier PDF ou Word : le formulaire se remplit tout seul. Relis ensuite chaque rubrique, car la lecture automatique n'est pas toujours parfaite. La même chose existe pour une lettre de motivation."),
+            ("Est-ce que ça marche sur téléphone ?", "Oui. Le formulaire et l'aperçu fonctionnent dans le navigateur de ton téléphone, et le PDF se télécharge ou se partage directement."),
+            ("Mon CV sera-t-il lu par les logiciels de tri (ATS) ?", "Le texte du PDF est du vrai texte, que ces logiciels peuvent lire. Le modèle Classique, sur une seule colonne, est le plus sûr pour cet usage."),
+            ("Mon nom contient des lettres comme ɛ, ɔ ou ŋ. Est-ce pris en charge ?", "Oui. Les lettres des langues africaines écrites en alphabet latin s'affichent correctement dans le PDF."),
+            ("Que deviennent mes informations ?", "Sans compte, elles restent sur ton appareil : le serveur ne les reçoit que le temps de fabriquer le PDF et ne les conserve pas. Si tu crées un compte, ton CV est enregistré sur nos serveurs jusqu'à ce que tu le supprimes."),
+        ],
+        "partager": "Partager sur WhatsApp",
+        "partage_message": "Crée ton CV et ta lettre de motivation en PDF, gratuitement : ",
+    },
+    "en": {
+        "titre_page": "CV.express — your CV and cover letter as a PDF",
+        "description": "Create your CV and cover letter as a PDF in a few minutes. European and African templates, free, no sign-up.",
+        "og_description": "European and African CV templates, cover letter included. Free, no sign-up.",
+        "badge": "Free · No sign-up",
+        "h1": "A CV that gets you <em>called back</em>.",
+        "accroche": "Fill in the form, pick your template, download your PDF. European and African layouts, cover letter included.",
+        "exemple": "See an example",
+        "deja": "I already have a CV: import it",
+        "atouts": ["<strong>4 polished</strong> templates", "<strong>3 languages</strong> FR · EN · IT", "<strong>PDF</strong> ready to send"],
+        "style_titre": "Pick your style",
+        "style_texte": "Four layouts, six colours. Switch at any time without retyping anything.",
+        "ouvrir_titre": "Open the example as a PDF", "ouvrir": "Open the PDF", "utiliser": "Use it",
+        "modeles": [
+            ("moderne", "Modern", "Preview of the modern template", "Colour banner and round photo. To stand out."),
+            ("classique", "Classic", "Preview of the classic template", "Plain, single column. Best for applicant tracking systems (ATS)."),
+            ("europeen", "European", "Preview of the European template", "Inspired by Europass, expected in many EU countries."),
+            ("africain", "African", "Preview of the African template", "Full personal details, photo, references, declaration of accuracy."),
+        ],
+        "etapes_titre": "Three steps, that's all",
+        "etapes": [
+            ("Fill in", "Your background, your skills, your languages. Everything is saved in your browser as you go. Already have a CV? Import it as a PDF or Word file."),
+            ("Choose", "Template, colour, document language. The preview updates while you type."),
+            ("Download", "A clean A4 PDF, ready to send or print. The cover letter works the same way."),
+        ],
+        "commencer": "Start now",
+        "guides_titre": "Advice for your situation",
+        "guides_texte": "Customs are not the same in Dakar, Abidjan or Milan. These guides explain what to include, and in what order.",
+        "guides": [
+            ("modele-cv-afrique", "CVs in French-speaking Africa", "Personal details, photo, references: what recruiters expect."),
+            ("cv-europass", "European CV", "Europass structure, language levels from A1 to C2, photo or not."),
+            ("cv-sans-experience", "CV with no experience", "Student or first job: what to write when you are starting out."),
+            ("lettre-de-motivation", "Cover letter", "The expected layout and the three-paragraph plan."),
+        ],
+        "faq_titre": "Frequently asked questions",
+        "faq": [
+            ("Is it really free?", "Yes. You can create, edit and download your CV and cover letter as a PDF without paying and without creating an account."),
+            ("Do I need to create an account?", "No. What you type is saved in your browser: you find it again when you come back to the site on the same device. If you also want it on another device, you can create a free account, but it is never required."),
+            ("I already have a CV. Do I have to retype everything?", "No. In the editor, click “Import my CV” and send your PDF or Word file: the form fills itself in. Then check each section, because automatic reading is not always perfect. The same exists for a cover letter."),
+            ("Does it work on a phone?", "Yes. The form and the preview work in your phone's browser, and the PDF can be downloaded or shared directly."),
+            ("Will applicant tracking systems (ATS) be able to read my CV?", "The text in the PDF is real text, which these systems can read. The Classic template, in a single column, is the safest for this."),
+            ("My name contains letters such as ɛ, ɔ or ŋ. Are they supported?", "Yes. Letters of African languages written in the Latin alphabet are displayed correctly in the PDF."),
+            ("What happens to my information?", "Without an account, it stays on your device: the server only receives it for the time needed to build the PDF and does not keep it. If you create an account, your CV is stored on our servers until you delete it."),
+        ],
+        "partager": "Share on WhatsApp",
+        "partage_message": "Create your CV and cover letter as a PDF, for free: ",
+    },
+    "it": {
+        "titre_page": "CV.express — il tuo CV e la tua lettera di presentazione in PDF",
+        "description": "Crea il tuo CV e la tua lettera di presentazione in PDF in pochi minuti. Modelli europei e africani, gratis e senza registrazione.",
+        "og_description": "Modelli di CV europei e africani, lettera di presentazione inclusa. Gratis, senza registrazione.",
+        "badge": "Gratis · Senza registrazione",
+        "h1": "Un CV che fa venire voglia di <em>richiamarti</em>.",
+        "accroche": "Compila il modulo, scegli il modello, scarica il PDF. Impaginazioni europee e africane, lettera di presentazione inclusa.",
+        "exemple": "Vedi un esempio",
+        "deja": "Ho già un CV: importalo",
+        "atouts": ["<strong>4 modelli</strong> curati", "<strong>3 lingue</strong> FR · EN · IT", "<strong>PDF</strong> pronto da inviare"],
+        "style_titre": "Scegli il tuo stile",
+        "style_texte": "Quattro impaginazioni, sei colori. Puoi cambiare in qualsiasi momento senza riscrivere nulla.",
+        "ouvrir_titre": "Apri l'esempio in PDF", "ouvrir": "Apri il PDF", "utiliser": "Usa",
+        "modeles": [
+            ("moderne", "Moderno", "Anteprima del modello moderno", "Fascia colorata e foto rotonda. Per distinguersi."),
+            ("classique", "Classico", "Anteprima del modello classico", "Sobrio, a una colonna. Ideale per i software di selezione (ATS)."),
+            ("europeen", "Europeo", "Anteprima del modello europeo", "Ispirato a Europass, richiesto in molti paesi dell'UE."),
+            ("africain", "Africano", "Anteprima del modello africano", "Dati personali completi, foto, referenze, dichiarazione di veridicità."),
+        ],
+        "etapes_titre": "Tre passaggi, tutto qui",
+        "etapes": [
+            ("Compila", "Il tuo percorso, le tue competenze, le tue lingue. Tutto viene salvato nel tuo browser man mano. Hai già un CV? Importalo in PDF o in Word."),
+            ("Scegli", "Modello, colore, lingua del documento. L'anteprima si aggiorna mentre scrivi."),
+            ("Scarica", "Un PDF pulito, in formato A4, pronto da inviare o stampare. La lettera di presentazione segue lo stesso percorso."),
+        ],
+        "commencer": "Inizia ora",
+        "guides_titre": "Consigli per la tua situazione",
+        "guides_texte": "Le abitudini non sono le stesse a Dakar, ad Abidjan o a Milano. Queste guide ti spiegano che cosa inserire, e in quale ordine.",
+        "guides": [
+            ("modele-cv-afrique", "CV nell'Africa francofona", "Dati personali, foto, referenze: che cosa si aspettano i selezionatori."),
+            ("cv-europass", "CV europeo", "Struttura Europass, livelli di lingua da A1 a C2, foto o no."),
+            ("cv-sans-experience", "CV senza esperienza", "Studente o primo impiego: che cosa scrivere quando si comincia."),
+            ("lettre-de-motivation", "Lettera di presentazione", "L'impaginazione attesa e lo schema in tre paragrafi."),
+        ],
+        "faq_titre": "Domande frequenti",
+        "faq": [
+            ("È davvero gratis?", "Sì. Puoi creare, modificare e scaricare il tuo CV e la tua lettera di presentazione in PDF senza pagare e senza creare un account."),
+            ("Bisogna creare un account?", "No. Quello che scrivi viene salvato nel tuo browser: lo ritrovi tornando sul sito dallo stesso dispositivo. Se vuoi ritrovarlo anche su un altro dispositivo, puoi creare un account gratuito, ma non è mai obbligatorio."),
+            ("Ho già un CV. Devo riscrivere tutto?", "No. Nell'editor, clicca su «Importa il mio CV» e invia il tuo file PDF o Word: il modulo si compila da solo. Poi rileggi ogni sezione, perché la lettura automatica non è sempre perfetta. Lo stesso vale per una lettera di presentazione."),
+            ("Funziona sul telefono?", "Sì. Il modulo e l'anteprima funzionano nel browser del tuo telefono, e il PDF si scarica o si condivide direttamente."),
+            ("Il mio CV sarà letto dai software di selezione (ATS)?", "Il testo del PDF è testo vero, che questi software possono leggere. Il modello Classico, su una sola colonna, è il più sicuro per questo uso."),
+            ("Il mio nome contiene lettere come ɛ, ɔ o ŋ. Sono supportate?", "Sì. Le lettere delle lingue africane scritte in alfabeto latino vengono visualizzate correttamente nel PDF."),
+            ("Che fine fanno le mie informazioni?", "Senza account, restano sul tuo dispositivo: il server le riceve solo per il tempo necessario a creare il PDF e non le conserva. Se crei un account, il tuo CV viene salvato sui nostri server finché non lo elimini."),
+        ],
+        "partager": "Condividi su WhatsApp",
+        "partage_message": "Crea il tuo CV e la tua lettera di presentazione in PDF, gratis: ",
+    },
+}

@@ -1,10 +1,19 @@
 "use strict";
 /*
  * Éditeur : formulaire -> état (objet JS) -> POST /api/apercu (images) et /api/pdf (téléchargement).
- * L'état est sauvegardé dans le navigateur (localStorage) : rien n'est conservé sur le serveur.
+ * L'état est sauvegardé dans le navigateur (localStorage). Si le visiteur a créé un compte
+ * (facultatif, voir la fin du fichier), il est aussi enregistré sur le serveur.
  */
 
 const CLE_STOCKAGE = "cv-saas-v1";
+// Langue du site (définie par traductions.js d'après l'adresse : /en/…, /it/…) : c'est aussi
+// la langue proposée par défaut pour le document.
+const LANGUE_SITE = window.LANGUE_SITE || "fr";
+// Compte (facultatif, voir la fin du fichier). Déclaré ici car sauvegarder() s'en sert.
+const CLE_SYNCHRO = "cv-saas-synchro";   // { vu: date de la version du compte déjà vue ici, sale: modifié depuis }
+let compte = { connecte: false, email: null };
+let modeInscription = false;
+let minuterieEnvoi = null;
 const MODELES = ["moderne", "classique", "europeen", "africain"];
 
 // Description des listes répétables : [champ, libellé, type]
@@ -14,16 +23,135 @@ const LISTES = {
     ["dates", "Dates (ex. 08/2026 – 10/2026)"],
     ["points", "Missions et résultats (un par ligne)", "textarea"]] },
   formations: { nom: "Formation", champs: [
-    ["diplome", "Diplôme"], ["ecole", "Établissement"], ["dates", "Dates"],
+    ["diplome", "Diplôme", "suggere:diplomes"], ["ecole", "Établissement"], ["dates", "Dates"],
     ["details", "Détails (mention, matières…)"]] },
   competences: { nom: "Compétence", champs: [
-    ["categorie", "Catégorie (ex. Informatique)"], ["liste", "Compétences"]] },
+    ["categorie", "Catégorie (ex. Informatique)", "suggere:categories"], ["liste", "Compétences"]] },
   langues: { nom: "Langue", champs: [
-    ["langue", "Langue"], ["niveau", "Niveau (ex. Langue maternelle, B2…)"]] },
-  liens: { nom: "Lien", champs: [["label", "Texte affiché"], ["url", "Adresse (URL)"]] },
+    ["langue", "Langue", "suggere:langues"], ["niveau", "Niveau", "choix:niveaux"]] },
+  liens: { nom: "Lien", champs: [["label", "Texte affiché", "suggere:liens"], ["url", "Adresse (URL)"]] },
   references: { nom: "Référence", champs: [
     ["nom", "Nom"], ["fonction", "Fonction et entreprise"], ["contact", "Téléphone ou e-mail"]] },
 };
+
+// Listes de choix proposées dans le formulaire, dans la langue DU DOCUMENT (pas celle du site) :
+// ce qui est choisi est imprimé tel quel sur le CV. Les trois langues gardent le même ordre,
+// ce qui permet de convertir un choix quand on change la langue du document.
+//   « choix:… »   = liste fermée (menu déroulant) ;
+//   « suggere:… » = propositions, mais on peut taper autre chose (une langue locale, par exemple).
+const CHOIX = {
+  fr: {
+    niveaux: ["Langue maternelle", "Bilingue", "Courant", "C2 – Maîtrise", "C1 – Autonome", "B2 – Avancé",
+              "B1 – Intermédiaire", "A2 – Élémentaire", "A1 – Débutant", "Notions"],
+    langues: ["Français", "Anglais", "Italien", "Espagnol", "Portugais", "Allemand", "Arabe", "Chinois", "Russe",
+              "Néerlandais", "Turc", "Wolof", "Pulaar (peul)", "Sérère", "Bambara", "Dioula", "Mooré", "Ewe", "Fon",
+              "Yoruba", "Haoussa", "Igbo", "Lingala", "Kikongo", "Swahili", "Sango", "Fang", "Ewondo", "Douala",
+              "Bassa", "Baoulé", "Bété", "Malgache", "Kinyarwanda", "Kirundi", "Amharique", "Somali", "Tamazight"],
+    situations: ["Célibataire", "Marié(e)", "Pacsé(e) / en union libre", "Divorcé(e)", "Veuf / Veuve"],
+    permis: ["B", "A", "A et B", "B et C", "C", "D", "Aucun"],
+    nationalites: ["Sénégalaise", "Ivoirienne", "Camerounaise", "Malienne", "Burkinabè", "Togolaise", "Béninoise",
+                   "Guinéenne", "Nigérienne", "Tchadienne", "Gabonaise", "Congolaise", "Congolaise (RDC)",
+                   "Centrafricaine", "Mauritanienne", "Malgache", "Rwandaise", "Burundaise", "Marocaine", "Algérienne",
+                   "Tunisienne", "Nigériane", "Ghanéenne", "Française", "Italienne", "Belge", "Suisse", "Canadienne"],
+    diplomes: ["CEPE", "BEPC", "CAP", "BEP", "Baccalauréat", "BT (Brevet de technicien)", "BTS", "DUT", "Licence",
+               "Licence professionnelle", "Master", "Diplôme d'ingénieur", "Doctorat", "Attestation de formation"],
+    categories: ["Informatique", "Bureautique", "Langages", "Outils", "Comptabilité", "Gestion", "Communication",
+                 "Commerce et vente", "Techniques", "Qualités personnelles"],
+    liens: ["LinkedIn", "GitHub", "Portfolio", "Site web", "Behance"],
+  },
+  en: {
+    niveaux: ["Native speaker", "Bilingual", "Fluent", "C2 – Proficient", "C1 – Advanced", "B2 – Upper intermediate",
+              "B1 – Intermediate", "A2 – Elementary", "A1 – Beginner", "Basic knowledge"],
+    langues: ["French", "English", "Italian", "Spanish", "Portuguese", "German", "Arabic", "Chinese", "Russian",
+              "Dutch", "Turkish", "Wolof", "Pulaar (Fula)", "Serer", "Bambara", "Dioula", "Mooré", "Ewe", "Fon",
+              "Yoruba", "Hausa", "Igbo", "Lingala", "Kikongo", "Swahili", "Sango", "Fang", "Ewondo", "Duala",
+              "Bassa", "Baoulé", "Bété", "Malagasy", "Kinyarwanda", "Kirundi", "Amharic", "Somali", "Tamazight"],
+    situations: ["Single", "Married", "In a civil partnership", "Divorced", "Widowed"],
+    permis: ["B", "A", "A and B", "B and C", "C", "D", "None"],
+    nationalites: ["Senegalese", "Ivorian", "Cameroonian", "Malian", "Burkinabe", "Togolese", "Beninese",
+                   "Guinean", "Nigerien", "Chadian", "Gabonese", "Congolese", "Congolese (DRC)",
+                   "Central African", "Mauritanian", "Malagasy", "Rwandan", "Burundian", "Moroccan", "Algerian",
+                   "Tunisian", "Nigerian", "Ghanaian", "French", "Italian", "Belgian", "Swiss", "Canadian"],
+    diplomes: ["Primary school certificate", "Lower secondary certificate", "Vocational certificate (CAP)",
+               "Vocational diploma (BEP)", "High school diploma", "Technician certificate", "Higher National Diploma (BTS)",
+               "University diploma of technology (DUT)", "Bachelor's degree", "Vocational bachelor's degree",
+               "Master's degree", "Engineering degree", "PhD", "Training certificate"],
+    categories: ["IT", "Office software", "Programming languages", "Tools", "Accounting", "Management", "Communication",
+                 "Sales", "Technical skills", "Personal qualities"],
+    liens: ["LinkedIn", "GitHub", "Portfolio", "Website", "Behance"],
+  },
+  it: {
+    niveaux: ["Madrelingua", "Bilingue", "Fluente", "C2 – Padronanza", "C1 – Avanzato", "B2 – Intermedio superiore",
+              "B1 – Intermedio", "A2 – Elementare", "A1 – Principiante", "Nozioni di base"],
+    langues: ["Francese", "Inglese", "Italiano", "Spagnolo", "Portoghese", "Tedesco", "Arabo", "Cinese", "Russo",
+              "Olandese", "Turco", "Wolof", "Pulaar (fula)", "Serer", "Bambara", "Dioula", "Mooré", "Ewe", "Fon",
+              "Yoruba", "Hausa", "Igbo", "Lingala", "Kikongo", "Swahili", "Sango", "Fang", "Ewondo", "Duala",
+              "Bassa", "Baoulé", "Bété", "Malgascio", "Kinyarwanda", "Kirundi", "Amarico", "Somalo", "Tamazight"],
+    situations: ["Celibe / Nubile", "Coniugato/a", "Convivente", "Divorziato/a", "Vedovo/a"],
+    permis: ["B", "A", "A e B", "B e C", "C", "D", "Nessuna"],
+    nationalites: ["Senegalese", "Ivoriana", "Camerunese", "Maliana", "Burkinabé", "Togolese", "Beninese",
+                   "Guineana", "Nigerina", "Ciadiana", "Gabonese", "Congolese", "Congolese (RDC)",
+                   "Centrafricana", "Mauritana", "Malgascia", "Ruandese", "Burundese", "Marocchina", "Algerina",
+                   "Tunisina", "Nigeriana", "Ghanese", "Francese", "Italiana", "Belga", "Svizzera", "Canadese"],
+    diplomes: ["Licenza elementare", "Licenza media", "Qualifica professionale (CAP)", "Diploma professionale (BEP)",
+               "Diploma di maturità", "Diploma di tecnico", "Diploma tecnico superiore (BTS)",
+               "Diploma universitario di tecnologia (DUT)", "Laurea triennale", "Laurea professionalizzante",
+               "Laurea magistrale", "Laurea in ingegneria", "Dottorato di ricerca", "Attestato di formazione"],
+    categories: ["Informatica", "Pacchetto Office", "Linguaggi", "Strumenti", "Contabilità", "Gestione", "Comunicazione",
+                 "Commercio e vendita", "Competenze tecniche", "Qualità personali"],
+    liens: ["LinkedIn", "GitHub", "Portfolio", "Sito web", "Behance"],
+  },
+};
+function choix(nom) {
+  return (CHOIX[etat.options.langue] || CHOIX.fr)[nom] || [];
+}
+
+/** Menu déroulant : les choix de la liste, plus la valeur actuelle si elle n'en fait pas partie
+ *  (CV importé, ancienne sauvegarde) : rien de ce que l'utilisateur a écrit n'est perdu. */
+function remplirMenu(menu, nom, valeur) {
+  menu.translate = false; menu.setAttribute("translate", "no");   // contenu dans la langue du document
+  const options = [["", (window.tr || (t => t))("Choisir…")], ...choix(nom).map(c => [c, c])];
+  if (valeur && !choix(nom).includes(valeur)) options.push([valeur, valeur]);
+  menu.replaceChildren(...options.map(([v, texte]) => new Option(texte, v)));
+  menu.value = valeur || "";
+}
+
+/** Propositions sous un champ de saisie (on peut toujours taper autre chose). */
+function brancherSuggestions(saisie, nom) {
+  let liste = document.getElementById("choix-" + nom);
+  if (!liste) {
+    liste = document.createElement("datalist");
+    liste.id = "choix-" + nom; liste.setAttribute("translate", "no");
+    document.body.append(liste);
+  }
+  liste.replaceChildren(...choix(nom).map(c => new Option(c)));
+  saisie.setAttribute("list", liste.id);
+  saisie.autocomplete = "off";
+}
+
+/** Champs fixes du formulaire (état civil) : data-choix="situations", data-suggere="nationalites". */
+function remplirChoix() {
+  for (const menu of $$("select[data-choix]")) remplirMenu(menu, menu.dataset.choix, lire(menu.dataset.k));
+  for (const saisie of $$("input[data-suggere]")) brancherSuggestions(saisie, saisie.dataset.suggere);
+}
+
+/** La langue du document change : un choix fait dans une liste est converti (« Courant » -> « Fluent »). */
+function convertirChoix(ancienne, nouvelle) {
+  const a = CHOIX[ancienne], n = CHOIX[nouvelle];
+  if (!a || !n || ancienne === nouvelle) return;
+  const convertir = (nom, valeur) => {
+    const i = typeof valeur === "string" ? a[nom].indexOf(valeur) : -1;
+    return i >= 0 ? n[nom][i] : valeur;
+  };
+  for (const l of etat.cv.langues) { l.langue = convertir("langues", l.langue); l.niveau = convertir("niveaux", l.niveau); }
+  for (const f of etat.cv.formations) f.diplome = convertir("diplomes", f.diplome);
+  for (const c of etat.cv.competences) c.categorie = convertir("categories", c.categorie);
+  for (const l of etat.cv.liens) l.label = convertir("liens", l.label);
+  const ec = etat.cv.etat_civil;
+  ec.situation = convertir("situations", ec.situation);
+  ec.nationalite = convertir("nationalites", ec.nationalite);
+  ec.permis = convertir("permis", ec.permis);
+}
 
 const CONSEILS = {
   moderne: "Bandeau de couleur et photo ronde : un CV qui se remarque, idéal pour les métiers de contact, du commerce et du numérique.",
@@ -75,14 +203,14 @@ const TEXTES_LETTRE = {
 function etatVide() {
   return {
     type: "cv",
-    options: { modele: "moderne", modele_lettre: "classique", langue: "fr", couleur: "1F4E79", certifier: false },
+    options: { modele: "moderne", modele_lettre: "classique", langue: LANGUE_SITE, couleur: "1F4E79", certifier: false },
     cv: { nom: "", titre: "", email: "", telephone: "", ville: "", etat_civil: {}, profil: "",
           experiences: [{}], formations: [{}], competences: [{}], langues: [{}], liens: [],
           interets: "", references: [], photo: "" },
     lettre: { destinataire: {}, lieu: "", objet: "", pj: "",
               parties: { accroche: "", parcours: "", entreprise: "", conclusion: "" },
-              date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
-              salutation: TEXTES_LETTRE.fr.salutation, formule: TEXTES_LETTRE.fr.formule },
+              date: new Date().toLocaleDateString(window.LOCALE_SITE || "fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+              salutation: TEXTES_LETTRE[LANGUE_SITE].salutation, formule: TEXTES_LETTRE[LANGUE_SITE].formule },
   };
 }
 
@@ -153,6 +281,7 @@ const $$ = sel => [...document.querySelectorAll(sel)];
 
 function sauvegarder() {
   try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(etat)); } catch { /* quota ou navigation privée */ }
+  aEnvoyer();   // compte connecté : la modification partira aussi vers le serveur
 }
 
 // ---------- Champs simples : data-k="cv.etat_civil.permis" ----------
@@ -209,11 +338,17 @@ function dessinerListe(nom) {
     for (const [champ, texte, type] of champs) {
       const label = document.createElement("label");
       label.textContent = texte;
-      const saisie = document.createElement(type === "textarea" ? "textarea" : "input");
-      if (type === "textarea") { saisie.rows = 4; label.className = "large"; }
-      saisie.maxLength = type === "textarea" ? 3000 : 300;
-      saisie.value = element[champ] ?? "";
-      saisie.addEventListener("input", () => { element[champ] = saisie.value; modifie(); });
+      const [genre, liste] = (type || "").split(":");
+      const saisie = document.createElement(genre === "textarea" ? "textarea" : genre === "choix" ? "select" : "input");
+      if (genre === "textarea") { saisie.rows = 4; label.className = "large"; }
+      if (genre === "choix") {
+        remplirMenu(saisie, liste, element[champ]);
+      } else {
+        saisie.maxLength = genre === "textarea" ? 3000 : 300;
+        saisie.value = element[champ] ?? "";
+        if (genre === "suggere") brancherSuggestions(saisie, liste);
+      }
+      saisie.addEventListener("input", () => { element[champ] = saisie.value; modifie(genre === "choix" ? 0 : 1200); });
       label.append(saisie);
       grille.append(label);
     }
@@ -267,6 +402,7 @@ function afficherType() {
   for (const el of $$(".pour-cv")) el.hidden = etat.type !== "cv";
   for (const el of $$(".pour-lettre")) el.hidden = etat.type !== "lettre";
   $("#conseil-modele").textContent = CONSEILS[etat.options.modele] || "";
+  afficherImport();
   afficherProgres();
 }
 for (const b of $$(".onglets button")) {
@@ -460,7 +596,13 @@ $("#formulaire").addEventListener("input", e => {
   if (!el.dataset.k) return;   // les champs des listes ont leur propre écouteur
   ecrire(el.dataset.k, el.type === "checkbox" ? el.checked : el.value);
   if (el.dataset.k === "options.modele") afficherType();
-  if (el.dataset.k === "options.langue") adapterLangueLettre(el.value);
+  if (el.dataset.k === "options.langue") {
+    // Les listes de choix suivent la langue du document, et les choix déjà faits sont convertis.
+    convertirChoix(langueDocument, el.value);
+    langueDocument = el.value;
+    adapterLangueLettre(el.value);
+    toutDessiner();
+  }
   const immediat = el.tagName === "SELECT" || el.type === "checkbox" || el.type === "radio";
   modifie(immediat ? 0 : 1200);
 });
@@ -482,8 +624,63 @@ $("#btn-trame").addEventListener("click", () => {
   remplirChamps(); modifie();
 });
 
+// ---------- Importer un CV ou une lettre déjà existants (PDF ou Word) ----------
+function afficherImport() {
+  const lettre = etat.type === "lettre";
+  $("#import-titre").textContent = lettre ? "Tu as déjà une lettre ?" : "Tu as déjà un CV ?";
+  $("#import-texte").textContent = lettre
+    ? "Envoie-la (PDF ou Word) : le texte est réparti dans les cases, tu n'as plus qu'à l'adapter à l'offre."
+    : "Envoie-le (PDF ou Word) : le formulaire se remplit tout seul, tu n'as plus qu'à corriger et choisir un modèle.";
+  $("#import-libelle").textContent = lettre ? "Importer ma lettre" : "Importer mon CV";
+}
+function messageImport(texte) {
+  $("#import-message").textContent = texte || "";
+  $("#import-message").hidden = !texte;
+}
+
+$("#import-fichier").addEventListener("change", async e => {
+  const fichier = e.target.files[0];
+  e.target.value = "";
+  if (!fichier) return;
+  const lettre = etat.type === "lettre";
+  if (fichier.size > 3 * 1024 * 1024) return messageImport("Ce fichier est trop lourd (3 Mo au maximum).");
+  if ((lettre ? texteLettre(etat.lettre) : etat.cv.nom.trim())
+      && !confirm(lettre ? "Remplacer le texte actuel de ta lettre par celui du fichier ?"
+                         : "Remplacer le CV actuel par celui du fichier ?")) return;
+  messageImport("Lecture du fichier…");
+  let r, resultat;
+  try {
+    r = await fetch("/api/importer?type=" + (lettre ? "lettre" : "cv"), {
+      method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: fichier });
+    resultat = await r.json();
+  } catch {
+    return messageImport("Connexion impossible. Vérifie ta connexion Internet et réessaie.");
+  }
+  if (!r.ok) return messageImport(resultat.erreur || "Ce fichier n'a pas pu être lu.");
+  if (lettre) {
+    // On garde le lieu, la date et le destinataire déjà saisis ; la formule d'appel et la
+    // formule de politesse ne sont remplacées que si le fichier en contient.
+    const recue = resultat.lettre;
+    etat = fusionner({ ...etat, lettre: { ...etat.lettre, parties: recue.parties, objet: recue.objet || etat.lettre.objet,
+      pj: recue.pj || etat.lettre.pj, salutation: recue.salutation || etat.lettre.salutation,
+      formule: recue.formule || etat.lettre.formule } });
+    messageImport("Ta lettre a été importée. Relis chaque case : la répartition automatique n'est pas toujours parfaite.");
+  } else {
+    etat = fusionner({ ...etat, cv: { ...resultat.cv, photo: etat.cv.photo } });
+    const cv = etat.cv;
+    const nb = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
+    messageImport(`CV importé : ${nb(cv.experiences.length, "expérience")}, ${nb(cv.formations.length, "formation")}, `
+      + `${nb(cv.langues.length, "langue")}. Relis chaque rubrique : la lecture automatique n'est pas toujours parfaite.`);
+  }
+  toutDessiner(); modifie(0);
+});
+
 // ---------- Exemple / export / import / vider ----------
+let langueDocument = etat.options.langue;     // pour convertir les choix quand elle change
+
 function toutDessiner() {
+  langueDocument = etat.options.langue;
+  remplirChoix();       // avant remplirChamps : un menu doit contenir la valeur à afficher
   remplirChamps();
   Object.keys(LISTES).forEach(dessinerListe);
   afficherPhoto();
@@ -493,10 +690,10 @@ function toutDessiner() {
 async function chargerExemple() {
   if (etat.cv.nom.trim() && !confirm("Remplacer tes données par l'exemple ?")) return;
   try {
-    const exemple = await (await fetch("exemple.json")).json();
+    const exemple = await (await fetch("/exemple.json")).json();
     // L'exemple de lettre va avec l'exemple de CV (même personne) ; on garde la lettre
     // déjà écrite s'il y en a une.
-    const lettre = texteLettre(etat.lettre) ? etat.lettre : await (await fetch("exemple_lettre.json")).json();
+    const lettre = texteLettre(etat.lettre) ? etat.lettre : await (await fetch("/exemple_lettre.json")).json();
     etat = fusionner({ type: etat.type, options: etat.options, lettre, cv: exemple });
     toutDessiner(); modifie(0);
   } catch {
@@ -507,7 +704,9 @@ $("#btn-exemple").addEventListener("click", chargerExemple);
 $("#btn-exemple-vide").addEventListener("click", chargerExemple);
 
 $("#btn-vider").addEventListener("click", () => {
-  if (!confirm("Effacer toutes les données du formulaire ?")) return;
+  if (!confirm(compte.connecte
+    ? "Effacer toutes les données du formulaire, sur cet appareil ET dans ton compte ?"
+    : "Effacer toutes les données du formulaire ?")) return;
   etat = etatVide();
   toutDessiner(); sauvegarder(); actualiser();
 });
@@ -535,4 +734,182 @@ $("#btn-importer").addEventListener("change", async e => {
 toutDessiner();
 // Arrivée par « Voir un exemple » : on charge l'exemple, sauf si un CV est déjà en cours.
 if (parametres.get("exemple") === "1" && !etat.cv.nom.trim()) chargerExemple();
+// Arrivée par « J'ai déjà un CV » (/creer?importer=1) : on met la carte d'import en évidence.
+if (parametres.get("importer") === "1") {
+  $("#import").classList.add("en-avant");
+  $("#import-bouton").focus();
+}
 else actualiser();
+
+// =====================================================================
+// Compte (facultatif) : connexion, et copie du CV sur le serveur pour le
+// retrouver depuis un autre appareil. Sans compte, rien de tout ceci ne s'active.
+// =====================================================================
+
+function lireSynchro() {
+  try { return JSON.parse(localStorage.getItem(CLE_SYNCHRO)) || {}; } catch { return {}; }
+}
+function ecrireSynchro(s) {
+  try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify(s)); } catch { /* stockage indisponible */ }
+}
+function estVide(e) {
+  return !e.cv.nom.trim() && !texteLettre(e.lettre);
+}
+
+/** Appel à /api/compte… -> { ok, statut, corps }. Ne lève jamais d'erreur. */
+async function api(methode, chemin, corps) {
+  try {
+    const r = await fetch("/api/compte" + chemin, {
+      method: methode,
+      credentials: "same-origin",
+      headers: corps ? { "Content-Type": "application/json" } : {},
+      body: corps ? JSON.stringify(corps) : undefined,
+    });
+    return { ok: r.ok, statut: r.status, corps: await r.json().catch(() => ({})) };
+  } catch {
+    return { ok: false, statut: 0, corps: { erreur: "Connexion impossible. Vérifie ta connexion Internet." } };
+  }
+}
+
+function afficherCompte(message) {
+  $("#btn-compte").textContent = compte.connecte ? "Mon espace" : "Se connecter";
+  $("#compte-form").hidden = compte.connecte;
+  $("#compte-connecte").hidden = !compte.connecte;
+  $("#compte-qui").textContent = compte.email || "";
+  if (message !== undefined) $("#compte-synchro").textContent = message;
+  $("#compte-titre").textContent = modeInscription ? "Créer un compte" : "Se connecter";
+  $("#compte-valider").textContent = modeInscription ? "Créer mon compte" : "Se connecter";
+  $("#compte-question").textContent = modeInscription ? "Déjà un compte ?" : "Pas encore de compte ?";
+  $("#compte-bascule").textContent = modeInscription ? "Se connecter" : "Créer un compte";
+  $("#compte-aide-mdp").hidden = !modeInscription;
+  $("#compte-info-inscription").hidden = !modeInscription;
+  $("#compte-mdp").autocomplete = modeInscription ? "new-password" : "current-password";
+}
+
+function erreurCompte(sel, message) {
+  $(sel).textContent = message || "";
+  $(sel).hidden = !message;
+}
+
+/** Note qu'il y a une modification à envoyer, et programme l'envoi (après une pause dans la frappe). */
+function aEnvoyer() {
+  if (!compte.connecte) return;
+  ecrireSynchro({ ...lireSynchro(), sale: true });
+  clearTimeout(minuterieEnvoi);
+  minuterieEnvoi = setTimeout(envoyer, 2500);
+}
+
+async function envoyer() {
+  clearTimeout(minuterieEnvoi);
+  if (!compte.connecte) return false;
+  const r = await api("PUT", "/donnees", { donnees: etat });
+  if (r.ok) {
+    ecrireSynchro({ vu: r.corps.modifie_le, sale: false });
+    afficherCompte("Ton CV est enregistré dans ton compte.");
+  } else if (r.statut === 401) {
+    compte = { connecte: false, email: null };
+    afficherCompte();
+  } else {
+    afficherCompte("Enregistrement dans ton compte impossible pour l'instant : " + (r.corps.erreur || "réessaie plus tard") );
+  }
+  return r.ok;
+}
+
+/** Met d'accord cet appareil et le compte : la version la plus récente gagne ;
+ *  si les deux ont changé chacun de leur côté, on demande. */
+async function synchroniser() {
+  const r = await api("GET", "/donnees");
+  if (!r.ok) return;
+  const { donnees, modifie_le: date } = r.corps;
+  const s = lireSynchro();
+  const compteNouveau = donnees && date !== s.vu;         // le compte a une version pas encore vue ici
+  const localModifie = !estVide(etat) && (s.sale || s.vu === undefined);
+  let prendreCompte = compteNouveau;
+  if (compteNouveau && localModifie && JSON.stringify(fusionner(donnees)) !== JSON.stringify(etat)) {
+    prendreCompte = confirm("Ton compte contient un CV différent de celui de cet appareil.\n\n"
+      + "OK : charger le CV de ton compte.\nAnnuler : garder celui de cet appareil (il remplacera celui du compte).");
+  }
+  if (prendreCompte) {
+    etat = fusionner({ ...donnees, type: etat.type });
+    try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(etat)); } catch { /* stockage indisponible */ }
+    ecrireSynchro({ vu: date, sale: false });
+    toutDessiner(); actualiser();
+    afficherCompte("Ton CV a été chargé depuis ton compte.");
+  } else if (!estVide(etat) && (localModifie || !donnees)) {
+    await envoyer();
+  } else {
+    afficherCompte(donnees ? "Ton CV est enregistré dans ton compte." : "Ton CV sera enregistré dans ton compte dès que tu le rempliras.");
+  }
+}
+
+$("#btn-compte").addEventListener("click", () => {
+  erreurCompte("#compte-erreur", ""); erreurCompte("#compte-erreur-suppr", "");
+  afficherCompte();
+  $("#dlg-compte").showModal();
+});
+$("#compte-fermer").addEventListener("click", () => $("#dlg-compte").close());
+$("#compte-bascule").addEventListener("click", () => {
+  modeInscription = !modeInscription;
+  erreurCompte("#compte-erreur", "");
+  afficherCompte();
+});
+
+$("#compte-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#compte-email").value.trim(), mdp = $("#compte-mdp").value;
+  if (!email || !mdp) return erreurCompte("#compte-erreur", "Renseigne ton adresse e-mail et ton mot de passe.");
+  if (modeInscription && mdp.length < 8) return erreurCompte("#compte-erreur", "Le mot de passe doit contenir au moins 8 caractères.");
+  $("#compte-valider").disabled = true;
+  const r = await api("POST", modeInscription ? "/inscription" : "/connexion", { email, mot_de_passe: mdp });
+  $("#compte-valider").disabled = false;
+  $("#compte-mdp").value = "";
+  if (!r.ok) return erreurCompte("#compte-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
+  erreurCompte("#compte-erreur", "");
+  compte = { connecte: true, email: r.corps.email };
+  ecrireSynchro({});              // autre compte possible sur cet appareil : on repart de zéro
+  afficherCompte("");
+  await synchroniser();
+});
+
+$("#compte-deconnexion").addEventListener("click", async () => {
+  // On envoie d'abord les dernières modifications, pour ne rien perdre.
+  if (lireSynchro().sale && !(await envoyer())
+      && !confirm("Tes dernières modifications n'ont pas pu être enregistrées dans ton compte. Se déconnecter quand même ?")) return;
+  await api("POST", "/deconnexion", {});
+  compte = { connecte: false, email: null };
+  clearTimeout(minuterieEnvoi);
+  // Ordinateur partagé : après la déconnexion, il ne reste rien sur cet appareil.
+  etat = etatVide();
+  try { localStorage.removeItem(CLE_STOCKAGE); localStorage.removeItem(CLE_SYNCHRO); } catch { /* stockage indisponible */ }
+  toutDessiner(); actualiser();
+  afficherCompte();
+  $("#dlg-compte").close();
+});
+
+$("#compte-supprimer").addEventListener("click", async () => {
+  const mdp = $("#compte-mdp-suppr").value;
+  if (!mdp) return erreurCompte("#compte-erreur-suppr", "Saisis ton mot de passe pour confirmer.");
+  clearTimeout(minuterieEnvoi);
+  const r = await api("DELETE", "", { mot_de_passe: mdp });
+  $("#compte-mdp-suppr").value = "";
+  if (!r.ok) return erreurCompte("#compte-erreur-suppr", r.corps.erreur || "Suppression impossible. Réessaie.");
+  compte = { connecte: false, email: null };
+  try { localStorage.removeItem(CLE_SYNCHRO); } catch { /* stockage indisponible */ }
+  modeInscription = false;
+  afficherCompte();
+  $("#dlg-compte").close();
+  alert("Ton compte et le CV enregistré sur nos serveurs ont été supprimés.");
+});
+
+// Au chargement de la page : déjà connecté sur cet appareil ?
+(async () => {
+  const r = await api("GET", "");
+  if (r.ok && r.corps.connecte) {
+    compte = { connecte: true, email: r.corps.email };
+    afficherCompte("");
+    await synchroniser();
+  }
+  // Arrivée par le lien « Se connecter » des autres pages (/creer?compte=1) :
+  // on ouvre directement la fenêtre du compte.
+  if (parametres.get("compte") === "1") $("#btn-compte").click();
+})();

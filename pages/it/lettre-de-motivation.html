@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titre %}Lettera di presentazione: modello e struttura{% endblock %}
+{% block description %}Come scrivere una lettera di presentazione per un lavoro o un tirocinio: impaginazione, schema in tre paragrafi, formule di saluto. Genera la tua in PDF.{% endblock %}
+{% block contenu %}
+<h1>Lettera di presentazione: il modello che funziona</h1>
+<p class="chapeau">Una buona lettera sta in una pagina e risponde a una sola domanda: perché tu, per questo ruolo, in questa azienda? Ecco l'impaginazione attesa e lo schema da seguire.</p>
+
+<h2>L'impaginazione</h2>
+<ul>
+  <li><strong>In alto a sinistra</strong>: il tuo nome, indirizzo, telefono ed e-mail.</li>
+  <li><strong>A destra</strong>: il nome del destinatario o il suo ruolo, l'azienda, l'indirizzo.</li>
+  <li><strong>Luogo e data</strong>: «Dakar, 14 novembre 2026».</li>
+  <li><strong>L'oggetto</strong>: «Candidatura per la posizione di…», con il riferimento dell'annuncio se c'è.</li>
+  <li><strong>La formula di apertura</strong>: «Gentili Signori,», oppure il nome della persona se lo conosci.</li>
+</ul>
+
+<h2>Lo schema in tre paragrafi</h2>
+<ol>
+  <li><strong>Voi</strong>: perché ti interessano questa azienda e questo ruolo. Dimostra di esserti informato.</li>
+  <li><strong>Io</strong>: che cosa sai fare, con uno o due esempi precisi tratti dalla tua formazione o dalle tue esperienze.</li>
+  <li><strong>Noi</strong>: che cosa puoi portare, e la tua disponibilità per un colloquio.</li>
+</ol>
+
+<h2>Esempio di traccia</h2>
+<blockquote>
+  <p>Gentili Signori,</p>
+  <p>attualmente [la tua situazione], desidero candidarmi per la posizione di [posizione] presso [azienda], di cui [ciò che ti attrae: attività, progetto, reputazione].</p>
+  <p>Durante [formazione o esperienza], ho [risultato concreto, con un numero se possibile]. Questa esperienza mi ha permesso di sviluppare [competenza utile per il ruolo].</p>
+  <p>Sarei lieto di mettere queste competenze al servizio del vostro team, e resto a disposizione per un colloquio.</p>
+  <p>In attesa di un Vostro cortese riscontro, porgo distinti saluti.</p>
+</blockquote>
+
+<h2>Le regole da rispettare</h2>
+<ul>
+  <li>Una pagina, non di più. Frasi brevi.</li>
+  <li>Una lettera per ogni annuncio: non mandare la stessa a tutti.</li>
+  <li>Non ricopiare il CV: scegli due esempi e sviluppali.</li>
+  <li>Nessun errore. Falla rileggere.</li>
+  <li>Per una candidatura consegnata di persona, alcune amministrazioni chiedono una lettera scritta a mano: in quel caso usa il PDF come bozza da ricopiare.</li>
+</ul>
+
+<aside class="appel">
+  <p>Il generatore impagina la tua lettera alla francese (o in inglese, o in italiano) e ti propone una traccia da completare.</p>
+  <a href="{{ p }}/creer?type=lettre" class="bouton principal grand">Scrivi la mia lettera</a>
+</aside>
+{% endblock %}

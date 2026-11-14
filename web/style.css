@@ -549,3 +549,135 @@ legend { padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 500; colo
 @media (max-width: 900px) { .guides { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 500px) { .guides { grid-template-columns: 1fr; } }
 .faq summary::before { content: none; }
+
+/* ===================== Compte ===================== */
+.mini.compte { border-color: var(--primaire); color: var(--primaire); font-weight: 600; }
+#dlg-compte {
+  width: min(420px, calc(100vw - 32px));
+  padding: 26px 24px 22px;
+  border: 1px solid var(--bord);
+  border-radius: 16px;
+  background: var(--carte);
+  color: var(--texte);
+  box-shadow: var(--ombre);
+}
+#dlg-compte::backdrop { background: rgba(20, 18, 40, .55); }
+#dlg-compte h2 { margin: 0 0 6px; font-size: 21px; }
+#dlg-compte label { display: block; margin-top: 12px; }
+#dlg-compte .bouton { width: 100%; margin-top: 16px; }
+#dlg-compte .fermer {
+  position: absolute; top: 10px; right: 12px;
+  border: 0; background: none; padding: 4px 8px;
+  font-size: 22px; line-height: 1; color: var(--doux);
+}
+#dlg-compte .bascule { margin: 16px 0 0; font-size: 14px; color: var(--doux); text-align: center; }
+#dlg-compte .lien { border: 0; background: none; padding: 0; color: var(--primaire); font-weight: 600; text-decoration: underline; }
+#dlg-compte .danger { margin-top: 20px; padding: 0; border: 0; box-shadow: none; background: none; counter-increment: none; }
+#dlg-compte .danger summary { padding: 0; font-size: 14px; font-weight: 400; color: var(--doux); text-decoration: underline; cursor: pointer; }
+#dlg-compte .danger summary::before, #dlg-compte .danger summary::after { content: none; }
+.erreur-compte { margin: 12px 0 0; font-size: 14px; color: #b3261e; }
+@media (prefers-color-scheme: dark) { .erreur-compte { color: #ffb4ab; } }
+.entete-actions { display: flex; align-items: center; gap: 10px; }
+/* Sur le bandeau sombre de l'accueil, le bouton secondaire passe en blanc pour rester lisible. */
+.entete:not(.entete-page) .entete-actions .bouton:not(.principal) {
+  color: #fff; border-color: rgba(255, 255, 255, .6); background: transparent;
+}
+.entete:not(.entete-page) .entete-actions .bouton:not(.principal):hover { background: rgba(255, 255, 255, .14); }
+@media (max-width: 520px) {
+  .entete { padding-left: 14px; padding-right: 14px; }
+  .entete .logo { font-size: 18px; }
+  .entete-actions { gap: 6px; }
+  .entete-actions .bouton { padding: 7px 9px; font-size: 13px; white-space: nowrap; }
+}
+/* Très petits écrans : on garde « Se connecter » ; « Créer mon CV » est déjà dans la page. */
+@media (max-width: 350px) { .entete-actions .principal { display: none; } }
+
+/* ===================== Mon espace (/compte) ===================== */
+.initiale {
+  display: inline-grid; place-items: center;
+  width: 22px; height: 22px; margin-right: 7px;
+  border-radius: 50%;
+  background: var(--primaire); color: #fff;
+  font: 700 12px var(--corps); vertical-align: -4px;
+}
+.initiale.grande { width: 60px; height: 60px; margin: 0; font-size: 27px; flex: none; }
+.espace-tete { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.espace-tete h1 { margin: 0; }
+.espace-tete .note { margin: 2px 0 0; font-size: 16px; }
+.espace-message { margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; background: var(--primaire-doux); color: var(--texte); font-size: 15px; }
+.espace-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.carte-espace {
+  padding: 22px;
+  border: 1px solid var(--bord); border-radius: 16px;
+  background: var(--carte); box-shadow: var(--ombre);
+  font-size: 15px; line-height: 1.5;
+}
+.carte-espace.large { grid-column: 1 / -1; }
+.article .carte-espace h2 { margin: 0 0 14px; font-size: 19px; }
+.carte-espace label { display: block; margin-bottom: 12px; }
+.carte-espace .bouton { margin-top: 4px; }
+.carte-espace .note { margin: 10px 0 0; }
+.doc { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid var(--bord); }
+.doc:first-child { border-top: 0; padding-top: 0; }
+.doc p { margin: 3px 0 0; color: var(--doux); }
+.doc-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
+.puce-modele { display: inline-block; margin-left: 6px; padding: 2px 9px; border-radius: 99px; background: var(--primaire-doux); color: var(--primaire); font-size: 12px; font-weight: 600; }
+.puce-modele:empty { display: none; }
+.carte-espace form, .espace-porte form { overflow: visible; padding: 0; }
+.espace-porte form.carte-espace { padding: 22px; }
+.jauge-espace { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; color: var(--doux); }
+.jauge-espace progress { width: 140px; height: 8px; accent-color: var(--primaire); }
+.fiche { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0 0 16px; }
+.fiche dt { color: var(--doux); }
+.fiche dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.carte-espace .danger { margin-top: 18px; padding: 0; border: 0; box-shadow: none; background: none; }
+.carte-espace .danger summary { display: block; padding: 0; font: 400 14px var(--corps); color: var(--doux); text-decoration: underline; cursor: pointer; margin-bottom: 10px; }
+.carte-espace .danger summary::before, .carte-espace .danger summary::after { content: none; }
+.espace-porte { max-width: 460px; margin: 0 auto; }
+.espace-porte .bouton { width: 100%; margin-top: 8px; }
+.espace-porte .bascule { margin: 16px 0 0; font-size: 14px; color: var(--doux); text-align: center; }
+.espace-porte .lien { border: 0; background: none; padding: 0; color: var(--primaire); font-weight: 600; text-decoration: underline; }
+body:has(#espace:not([hidden])) .article { max-width: 900px; }
+@media (max-width: 700px) {
+  .espace-grille { grid-template-columns: 1fr; }
+  .doc { flex-direction: column; align-items: stretch; }
+  .doc-actions .bouton { flex: 1; text-align: center; }
+}
+
+/* ===================== Import d'un CV existant ===================== */
+.import {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+  margin-bottom: 14px; padding: 14px 18px;
+  border: 1px dashed var(--primaire); border-radius: 16px;
+  background: var(--primaire-doux);
+}
+.import > div { flex: 1 1 240px; }
+.import p { margin: 2px 0 0; font-size: 13px; color: var(--doux); }
+.import .bouton { flex: none; background: var(--carte); cursor: pointer; }
+.import .import-message { flex: 1 1 100%; margin: 0; font-size: 14px; color: var(--texte); }
+
+/* ===================== Sélecteur de langue ===================== */
+.langues { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; }
+.langues a { padding: 4px 6px; border-radius: 8px; color: inherit; opacity: .7; text-decoration: none; }
+.langues a:hover { opacity: 1; text-decoration: underline; }
+.langues a[aria-current] { opacity: 1; background: var(--primaire-doux); color: var(--primaire); }
+.entete:not(.entete-page) .langues a { color: #fff; }
+.entete:not(.entete-page) .langues a[aria-current] { background: rgba(255, 255, 255, .2); color: #fff; }
+.pied .langues { margin-top: 14px; }
+.accueil-import { margin: 14px 0 0; font-size: 15px; }
+.accueil-import a { color: inherit; font-weight: 600; }
+@media (max-width: 480px) {
+  .entete-actions .langues a { padding: 3px 4px; font-size: 12px; }
+}
+.import.en-avant { border-style: solid; border-width: 2px; box-shadow: 0 0 0 4px var(--primaire-doux); }
+.outils .langues { margin-left: 4px; }
+
+/* En-tête sur petit écran : les boutons passent sous le logo plutôt que de déborder. */
+@media (max-width: 560px) {
+  .entete { flex-wrap: wrap; row-gap: 8px; }
+  .entete-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+}
+/* Sur téléphone, l'en-tête n'a pas la place pour le sélecteur de langue : il reste dans le pied de page. */
+@media (max-width: 520px) {
+  .entete .langues { display: none; }
+}

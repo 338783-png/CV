@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titre %}Modello di CV per l'Africa francofona{% endblock %}
+{% block description %}Che cosa si aspettano i selezionatori da un CV in Senegal, Costa d'Avorio, Camerun, Togo o Benin: dati personali, foto, referenze. Modello gratuito in PDF.{% endblock %}
+{% block contenu %}
+<h1>Modello di CV per l'Africa francofona</h1>
+<p class="chapeau">In Senegal, Costa d'Avorio, Camerun, Togo, Benin o Burkina Faso, un CV non si presenta esattamente come in Europa. Ecco le abitudini più diffuse, e un modello che le rispetta.</p>
+
+<h2>Che cosa si trova più spesso</h2>
+<ul>
+  <li><strong>Un blocco «Dati personali» completo</strong>: nome e cognome, data e luogo di nascita, nazionalità, stato civile, indirizzo, telefono, e-mail.</li>
+  <li><strong>Una fototessera</strong> recente, su sfondo neutro, con un abbigliamento adeguato.</li>
+  <li><strong>La formazione in dettaglio</strong>: titolo esatto (baccalauréat e relativa serie, BTS, Licence, Master), istituto, anno. Per un neodiplomato viene prima dell'esperienza.</li>
+  <li><strong>Tirocini ed esperienze</strong>, con le date, l'azienda e due o tre mansioni concrete.</li>
+  <li><strong>Le lingue</strong>, comprese le lingue nazionali: parlare wolof, dioula, ewe o lingala è un vantaggio per molti lavori sul campo.</li>
+  <li><strong>Referenze</strong>: una o due persone (un ex responsabile, un insegnante) che il selezionatore può chiamare. Avvisale prima.</li>
+  <li><strong>La dichiarazione di veridicità</strong> in fondo alla pagina: «Dichiaro sotto la mia responsabilità che le informazioni sopra riportate sono veritiere».</li>
+</ul>
+
+<h2>Gli errori che costano un colloquio</h2>
+<ul>
+  <li>Un numero di telefono senza prefisso internazionale, o non più attivo. Indica un numero a cui sei raggiungibile, e precisa se è su WhatsApp.</li>
+  <li>Un indirizzo e-mail fantasioso. Creane uno con il tuo nome.</li>
+  <li>Tre pagine o più. Una pagina basta a inizio carriera, due al massimo in seguito.</li>
+  <li>Errori di ortografia. Fai rileggere il tuo CV a qualcuno.</li>
+  <li>Un file Word che si deforma da un telefono all'altro. Invia sempre un <strong>PDF</strong>.</li>
+</ul>
+
+<h2>E per una ONG o un'azienda internazionale?</h2>
+<p>Le organizzazioni internazionali e molte grandi aziende preferiscono un CV più breve, centrato su competenze e risultati, spesso senza stato civile. Leggi l'annuncio: se è richiesto un formato, seguilo. Altrimenti il modello classico o il modello europeo sono più adatti del modello con dati personali completi.</p>
+
+<h2>I nomi sono scritti correttamente</h2>
+<p>Le lettere proprie delle lingue africane (ɛ, ɔ, ŋ, ɓ, ɗ, ẹ, ọ…) sono supportate: il tuo nome compare sul PDF così come lo scrivi.</p>
+
+<aside class="appel">
+  <p>Il modello «Africano» riprende tutti questi elementi. Tu compili, lui impagina.</p>
+  <a href="{{ p }}/creer?modele=africain&amp;exemple=1" class="bouton principal grand">Crea il mio CV</a>
+  <a href="/exemple/africain.pdf" target="_blank" rel="noopener" class="bouton grand">Vedi un esempio in PDF</a>
+</aside>
+{% endblock %}

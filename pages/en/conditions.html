@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titre %}Terms of use{% endblock %}
+{% block description %}The rules for using the CV.express CV and cover letter generator.{% endblock %}
+{% block tete %}<meta name="robots" content="noindex">{% endblock %}
+{% block contenu %}
+<h1>Terms of use</h1>
+
+<h2>The service</h2>
+<p>CV.express lets you create a CV and a cover letter from a form, and download them as PDFs. The service is free and available without signing up. If you wish, you can create an account to find your documents on another device. By using it, you accept these terms.</p>
+
+<h2>What you agree to do</h2>
+<ul>
+  <li>Enter accurate information that concerns you or that you have the right to use. You alone are responsible for the content of your documents.</li>
+  <li>Not use the service to create false documents or to impersonate someone.</li>
+  <li>Not try to disrupt the site, in particular through automated, massive requests. Beyond a certain number of documents per minute, the site asks you to wait.</li>
+</ul>
+
+<h2>What we do not guarantee</h2>
+<p>A well-presented CV helps, but guarantees neither an interview nor a job. The advice published on the site describes common practice: it may vary by country, sector and employer. Always reread your document before sending it. The service is provided as is; we do our best to keep it available, without being able to guarantee permanent availability.</p>
+<p>Without an account, your information is saved on your device and not on our servers: we cannot recover it if you erase it or change device. Remember to use the editor's “Save” button.</p>
+<p>When you import an existing CV or letter, the form is filled in automatically from the text of your file. This reading is an aid, not a guarantee: check every section before downloading your document.</p>
+
+<h2>Your account</h2>
+<p>If you create an account, you are responsible for your password: choose one you do not use elsewhere and do not share it with anyone. A forgotten password cannot be recovered for now. You can change your password and delete your account at any time from the “My space” page. We may suspend or delete an account used to disrupt the service or to create false documents.</p>
+
+<h2>Your documents belong to you</h2>
+<p>You are free to use, print and send the documents you create. The templates and the site themselves remain the property of the publisher.</p>
+
+<h2>Personal data</h2>
+<p>See the <a href="{{ p }}/confidentialite">privacy policy</a>.</p>
+
+<h2>Changes to the service</h2>
+<p>The service and these terms may change. The version in force is the one published on this page. If paid features are added, their price will be shown clearly before any payment.</p>
+
+<h2>Governing law and disputes</h2>
+<p>These terms are governed by the law of the following country: {{ champ("droit_applicable", "pays, par exemple « français » ou « sénégalais »") }}. In case of disagreement, write to us first at {{ champ("email", "adresse e-mail") }}: we will look for an amicable solution. Failing that, the dispute will be brought before the competent courts, without prejudice to the protective rules you benefit from as a consumer in your country of residence.</p>
+
+<p class="note">This page is a translation; if the two differ, the <a href="/conditions">French version</a> prevails. Last updated: {{ champ("date_mise_a_jour", "date") }}.</p>
+{% endblock %}

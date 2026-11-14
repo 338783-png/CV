@@ -1,5 +1,6 @@
 """
 Le site web : page d'accueil + éditeur (dossier web/) + une API qui fabrique les documents.
+Les comptes utilisateurs (facultatifs) sont dans comptes.py.
 
 En développement :   .venv/bin/python app.py        puis ouvrir http://localhost:5000
 En production    :   gunicorn -w 1 --threads 8 -b 0.0.0.0:8000 app:app   (voir Dockerfile)
@@ -16,13 +17,21 @@ from collections import defaultdict, deque
 from flask import Flask, Response, jsonify, render_template, request
 from markupsafe import Markup, escape
 
+import comptes
+import importer
 import moteur
+import textes
 
 # web/ : fichiers servis tels quels (CSS, JS, images, éditeur) ; pages/ : pages HTML
 # assemblées par le serveur (accueil, guides, pages légales) avec en-tête et pied communs.
 app = Flask(__name__, static_folder="web", static_url_path="", template_folder="pages")
 # Refuse toute requête de plus de 3 Mo (la photo est déjà réduite côté navigateur).
 app.config["MAX_CONTENT_LENGTH"] = 3 * 1024 * 1024
+# Une page de pages/ modifiée est relue sans redémarrer le serveur (comme les fichiers de web/).
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+# Comptes utilisateurs (facultatifs) : base de données, cookie de session, routes /api/compte.
+comptes.initialiser(app)
 
 # Chez un hébergeur, le site est derrière un proxy : sans ceci, tous les visiteurs
 # auraient la même adresse IP (celle du proxy) et partageraient la même limite.
@@ -118,8 +127,24 @@ GUIDES = ["modele-cv-afrique", "cv-europass", "cv-sans-experience", "lettre-de-m
 LEGALES = ["mentions-legales", "confidentialite", "conditions"]
 
 
-def page(nom):
-    return render_template(f"{nom}.html", racine=request.url_root, url_page=request.base_url)
+# Le site existe en trois langues : français à la racine, anglais sous /en/, italien sous /it/.
+PREFIXES = {"fr": "", "en": "/en", "it": "/it"}
+
+
+def page(nom, langue="fr"):
+    """Affiche pages/<nom>.html dans la langue demandée. Les pages longues (guides, pages
+    légales) ont un fichier par langue : pages/en/<nom>.html, pages/it/<nom>.html."""
+    fichier = f"{nom}.html"
+    if langue != "fr" and (moteur.RACINE / "pages" / langue / fichier).is_file():
+        fichier = f"{langue}/{fichier}"
+    chemin = "/" if nom == "accueil" else f"/{nom}"          # adresse de la page, sans préfixe de langue
+    racine = request.url_root.rstrip("/")
+    return render_template(
+        fichier, racine=request.url_root, url_page=request.base_url,
+        langue=langue, p=PREFIXES[langue], c=textes.COMMUN[langue], a=textes.ACCUEIL[langue],
+        # La même page dans chaque langue : sélecteur de langue et balises hreflang.
+        versions=[(code, textes.LANGUES_SITE[code], PREFIXES[code] + chemin, racine + PREFIXES[code] + chemin)
+                  for code in PREFIXES])
 
 
 # Informations légales (éditeur, hébergeur…) : un seul fichier, editeur.json, lu par les
@@ -149,6 +174,28 @@ def accueil():
     return page("accueil")
 
 
+@app.get("/compte")
+def espace():
+    """« Mon espace » : connexion, ou profil du visiteur connecté. La page ne contient
+    rien de personnel : c'est son script (web/espace.js) qui demande les données du compte."""
+    return page("compte")
+
+
+@app.get("/<any(en,it):langue>/")
+def accueil_traduit(langue):
+    return page("accueil", langue)
+
+
+@app.get("/<any(en,it):langue>/<nom>")
+def page_traduite(langue, nom):
+    """/en/creer, /it/cv-europass… : la même page, dans une autre langue."""
+    if nom in GUIDES or nom in LEGALES or nom == "compte":
+        return page(nom, langue)
+    if nom == "creer":
+        return app.send_static_file("creer.html")      # traduit dans le navigateur (traductions.js)
+    return "Page introuvable.", 404
+
+
 @app.get("/<nom>")
 def page_texte(nom):
     if nom in GUIDES or nom in LEGALES:
@@ -167,7 +214,9 @@ def robots():
 @app.get("/sitemap.xml")
 def plan_du_site():
     """La liste des pages à faire connaître aux moteurs de recherche."""
-    adresses = [request.url_root] + [request.url_root + nom for nom in GUIDES]
+    racine = request.url_root.rstrip("/")
+    adresses = [racine + prefixe + chemin for prefixe in PREFIXES.values()
+                for chemin in ["/"] + ["/" + nom for nom in GUIDES]]
     corps = "".join(f"<url><loc>{a}</loc></url>" for a in adresses)
     return Response('<?xml version="1.0" encoding="UTF-8"?>'
                     f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{corps}</urlset>',
@@ -277,6 +326,18 @@ def pdf():
     })
 
 
+@app.post("/api/importer")
+@avec_erreurs
+def importer_document():
+    """Un CV ou une lettre existants (PDF ou .docx, envoyé tel quel dans le corps de la
+    requête) -> les champs du formulaire, pré-remplis. Le fichier n'est pas conservé."""
+    type_document = "lettre" if request.args.get("type") == "lettre" else "cv"
+    octets = request.get_data(cache=False)
+    if not octets:
+        raise moteur.ErreurDonnees("Aucun fichier reçu.")
+    return jsonify(importer.importer(octets, type_document))
+
+
 @app.errorhandler(413)
 def trop_gros(_):
     return jsonify(erreur="Données trop volumineuses (3 Mo maximum)."), 413
@@ -284,4 +345,6 @@ def trop_gros(_):
 
 if __name__ == "__main__":
     # debug=False : le mode debug de Flask ne doit jamais être exposé sur Internet.
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    # use_reloader : le serveur se relance tout seul dès qu'un fichier .py change (sinon il
+    # continue de tourner avec l'ancien code). Le débogueur, lui, reste désactivé.
+    app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=True)

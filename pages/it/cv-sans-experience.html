@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titre %}Fare un CV senza esperienza (studente, primo impiego){% endblock %}
+{% block description %}Studente o neodiplomato: come compilare un CV quando non hai ancora lavorato. Tirocini, progetti, volontariato, competenze. Modello gratuito in PDF.{% endblock %}
+{% block contenu %}
+<h1>Fare un CV quando non si ha esperienza</h1>
+<p class="chapeau">Tutti hanno cominciato con un CV quasi vuoto. Un selezionatore che assume un tirocinante o un principiante non cerca dieci anni di carriera: cerca una persona seria, che impara in fretta. Il tuo CV deve dimostrarlo.</p>
+
+<h2>1. Comincia con una frase di apertura</h2>
+<p>Due righe in cima al CV: chi sei, che cosa cerchi, da quando. Per esempio: «Studentessa al secondo anno di Contabilità, cerco un tirocinio di tre mesi a partire da giugno.»</p>
+
+<h2>2. Metti la formazione al primo posto</h2>
+<p>Titolo in corso o conseguito, istituto, anno. Aggiungi ciò che ti distingue: un voto alto, una graduatoria, le materie legate al ruolo, l'argomento della tesi.</p>
+
+<h2>3. Tutto ciò che somiglia a un lavoro conta</h2>
+<ul>
+  <li><strong>Tirocini</strong>, anche brevi, anche di sola osservazione.</li>
+  <li><strong>Progetti scolastici</strong>: una presentazione, uno studio di caso, un'applicazione, un'indagine sul campo.</li>
+  <li><strong>Lavoretti</strong>: vendita, ripetizioni, aiuto nel negozio di famiglia. Dimostrano che sei affidabile.</li>
+  <li><strong>Volontariato e vita associativa</strong>: direttivo di un'associazione, organizzazione di un evento, animazione per ragazzi.</li>
+</ul>
+<p>Per ciascuno, scrivi che cosa hai <em>fatto</em>, con un numero se possibile: «Gestione della cassa, 50 clienti al giorno», «Organizzazione di un torneo con 12 squadre».</p>
+
+<h2>4. Descrivi le tue competenze</h2>
+<p>Strumenti informatici (Word, Excel, un software di settore), lingue parlate con il tuo livello, patente di guida. Sii preciso: «Excel: tabelle pivot» vale più di «Buona conoscenza dell'informatica».</p>
+
+<h2>5. Resta su una pagina, e di' la verità</h2>
+<p>Una pagina basta e avanza. Non inventare nulla: un'esperienza inventata si scopre in due domande durante il colloquio. Un CV breve e vero vale più di un CV pieno e falso.</p>
+
+<aside class="appel">
+  <p>Il modulo ti guida sezione per sezione, e un indicatore ti mostra che cosa resta da aggiungere.</p>
+  <a href="{{ p }}/creer?modele=moderne&amp;exemple=1" class="bouton principal grand">Crea il mio primo CV</a>
+  <a href="/exemple/moderne.pdf" target="_blank" rel="noopener" class="bouton grand">Vedi un esempio in PDF</a>
+</aside>
+{% endblock %}

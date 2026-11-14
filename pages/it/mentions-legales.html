@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titre %}Note legali{% endblock %}
+{% block description %}Note legali del sito CV.express: editore, fornitore di hosting, contatti.{% endblock %}
+{% block tete %}<meta name="robots" content="noindex">{% endblock %}
+{% block contenu %}
+<h1>Note legali</h1>
+
+<h2>Editore del sito</h2>
+<p>{{ champ("nom", "nom et prénom, ou raison sociale et forme juridique") }}<br>
+{{ champ("adresse", "adresse postale") }}<br>
+{{ champ("email", "adresse e-mail de contact") }}
+{%- if editeur.immatriculation %}<br>
+Numero di registrazione: {{ editeur.immatriculation }}{% endif %}</p>
+<p>Direttore responsabile: {{ champ("directeur_publication", "nom") }}</p>
+
+<h2>Fornitore di hosting</h2>
+<p>{{ champ("hebergeur_nom", "nom de l'hébergeur") }}<br>
+{{ champ("hebergeur_adresse", "adresse de l'hébergeur") }}<br>
+{{ champ("hebergeur_site", "site web de l'hébergeur") }}</p>
+
+<h2>Proprietà intellettuale</h2>
+<p>La grafica del sito e i modelli di documento sono di proprietà dell'editore. I CV e le lettere che crei ti appartengono: puoi usarli, stamparli e diffonderli liberamente.</p>
+
+<h2>Dati personali</h2>
+<p>Ciò che facciamo delle tue informazioni è spiegato nell'<a href="{{ p }}/confidentialite">informativa sulla privacy</a>. In breve: il tuo CV resta nel tuo browser, e viene conservato sui nostri server solo se crei un account.</p>
+
+<h2>Contatti</h2>
+<p>Per qualsiasi domanda o per segnalare un problema: {{ champ("email", "adresse e-mail") }}.</p>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titre %}Condizioni d'uso{% endblock %}
+{% block description %}Le regole per usare il generatore di CV e lettere di presentazione CV.express.{% endblock %}
+{% block tete %}<meta name="robots" content="noindex">{% endblock %}
+{% block contenu %}
+<h1>Condizioni d'uso</h1>
+
+<h2>Il servizio</h2>
+<p>CV.express permette di creare un CV e una lettera di presentazione a partire da un modulo, e di scaricarli in PDF. Il servizio è gratuito e accessibile senza registrazione. Se lo desideri, puoi creare un account per ritrovare i tuoi documenti da un altro dispositivo. Utilizzandolo, accetti le presenti condizioni.</p>
+
+<h2>Che cosa ti impegni a fare</h2>
+<ul>
+  <li>Inserire informazioni esatte, che ti riguardano o che hai il diritto di usare. Sei l'unico responsabile del contenuto dei tuoi documenti.</li>
+  <li>Non usare il servizio per creare documenti falsi o per spacciarti per qualcun altro.</li>
+  <li>Non cercare di disturbare il funzionamento del sito, in particolare con invii automatizzati e massicci. Oltre un certo numero di documenti al minuto, il sito ti chiede di attendere.</li>
+</ul>
+
+<h2>Che cosa non garantiamo</h2>
+<p>Un CV ben presentato aiuta, ma non garantisce né un colloquio né un'assunzione. I consigli pubblicati sul sito descrivono le pratiche più comuni: possono variare secondo il paese, il settore e il datore di lavoro. Rileggi sempre il documento prima di inviarlo. Il servizio è fornito così com'è; facciamo del nostro meglio perché sia disponibile, senza poter garantire una disponibilità permanente.</p>
+<p>Senza account, le tue informazioni sono salvate sul tuo dispositivo e non sui nostri server: non possiamo recuperarle se le cancelli o se cambi dispositivo. Ricordati di usare il pulsante «Salva» dell'editor.</p>
+<p>Quando importi un CV o una lettera esistenti, il modulo viene compilato automaticamente a partire dal testo del tuo file. Questa lettura è un aiuto, non una garanzia: controlla ogni sezione prima di scaricare il documento.</p>
+
+<h2>Il tuo account</h2>
+<p>Se crei un account, sei responsabile della tua password: scegline una che non usi altrove e non comunicarla a nessuno. Per ora una password dimenticata non può essere recuperata. Puoi cambiare la password ed eliminare il tuo account in qualsiasi momento dalla pagina «Il mio spazio». Possiamo sospendere o eliminare un account usato per disturbare il servizio o per creare documenti falsi.</p>
+
+<h2>I tuoi documenti ti appartengono</h2>
+<p>Sei libero di usare, stampare e inviare i documenti che crei. I modelli e il sito stessi restano di proprietà dell'editore.</p>
+
+<h2>Dati personali</h2>
+<p>Vedi l'<a href="{{ p }}/confidentialite">informativa sulla privacy</a>.</p>
+
+<h2>Evoluzione del servizio</h2>
+<p>Il servizio e le presenti condizioni possono cambiare. La versione in vigore è quella pubblicata su questa pagina. Se vengono aggiunte funzioni a pagamento, il loro prezzo sarà indicato chiaramente prima di qualsiasi pagamento.</p>
+
+<h2>Legge applicabile e controversie</h2>
+<p>Le presenti condizioni sono regolate dalla legge del seguente paese: {{ champ("droit_applicable", "pays, par exemple « français » ou « sénégalais »") }}. In caso di disaccordo, scrivici prima a {{ champ("email", "adresse e-mail") }}: cercheremo una soluzione amichevole. In mancanza, la controversia sarà portata davanti ai tribunali competenti, fatte salve le norme di tutela di cui benefici come consumatore nel tuo paese di residenza.</p>
+
+<p class="note">Questa pagina è una traduzione; in caso di differenze prevale la <a href="/conditions">versione francese</a>. Ultimo aggiornamento: {{ champ("date_mise_a_jour", "date") }}.</p>
+{% endblock %}

@@ -3,19 +3,32 @@
 {% block description %}Ce que CV.express fait, et ne fait pas, des informations que tu saisis pour créer ton CV.{% endblock %}
 {% block contenu %}
 <h1>Politique de confidentialité</h1>
-<p class="chapeau">En bref : ce que tu écris reste dans ton navigateur. Nos serveurs ne reçoivent tes informations que le temps de fabriquer ton document, et ne les conservent pas. Pas de compte, pas de cookie publicitaire, pas de revente de données.</p>
+<p class="chapeau">En bref : sans compte, ce que tu écris reste dans ton navigateur, et nos serveurs ne reçoivent tes informations que le temps de fabriquer ton document. Si tu choisis de créer un compte, ton CV est aussi enregistré sur nos serveurs pour que tu le retrouves partout, jusqu'à ce que tu le supprimes. Pas de cookie publicitaire, pas de revente de données.</p>
 
 <h2>Qui est responsable de tes données</h2>
-<p>Le responsable du traitement est {{ champ("nom", "nom de l'éditeur ou raison sociale") }}, {{ champ("adresse", "adresse postale") }}. Pour toute question sur tes données : {{ champ("email", "adresse e-mail") }}. Les coordonnées complètes de l'éditeur et de l'hébergeur figurent dans les <a href="/mentions-legales">mentions légales</a>.</p>
+<p>Le responsable du traitement est {{ champ("nom", "nom de l'éditeur ou raison sociale") }}, {{ champ("adresse", "adresse postale") }}. Pour toute question sur tes données : {{ champ("email", "adresse e-mail") }}. Les coordonnées complètes de l'éditeur et de l'hébergeur figurent dans les <a href="{{ p }}/mentions-legales">mentions légales</a>.</p>
 
-<h2>Les informations que tu saisis</h2>
+<h2>Les informations que tu saisis, sans compte</h2>
 <p>Ton nom, tes coordonnées, ton état civil (date et lieu de naissance, nationalité, situation familiale), ton parcours, ta photo et le texte de ta lettre sont enregistrés <strong>sur ton appareil</strong>, dans le stockage local de ton navigateur. Cela te permet de retrouver ton CV en revenant sur le site depuis le même appareil. Nous n'y avons pas accès.</p>
 <p>Quand l'aperçu se met à jour ou quand tu télécharges ton PDF, ces informations sont envoyées à notre serveur par une connexion chiffrée. Le serveur fabrique le document dans un dossier temporaire, te le renvoie, puis supprime ce dossier immédiatement. Nous n'enregistrons tes informations dans aucune base de données, nous ne les lisons pas, nous ne les vendons pas et nous ne les transmettons à personne.</p>
 <p>Le bouton « Sauvegarder » de l'éditeur crée un fichier sur ton appareil : il ne passe pas par nos serveurs.</p>
+<p>Si tu importes un CV ou une lettre que tu as déjà (fichier PDF ou Word), ce fichier est envoyé à notre serveur, qui en lit le texte pour remplir le formulaire, puis le supprime immédiatement. Il n'est ni conservé ni transmis.</p>
+
+<h2>Si tu crées un compte</h2>
+<p>Le compte est facultatif : le site fonctionne entièrement sans. Si tu en crées un, nous enregistrons sur nos serveurs :</p>
+<ul>
+  <li>ton <strong>adresse e-mail</strong>, qui sert d'identifiant ;</li>
+  <li>ton <strong>mot de passe sous forme d'empreinte chiffrée</strong> : nous ne connaissons pas ton mot de passe et ne pouvons pas le retrouver ;</li>
+  <li>le <strong>contenu de ton CV et de ta lettre</strong>, photo comprise, pour que tu les retrouves depuis un autre appareil ;</li>
+  <li>la date de création du compte, de ta dernière connexion et de la dernière modification.</li>
+</ul>
+<p>Ces informations sont conservées tant que ton compte existe. Tu peux le supprimer à tout moment depuis la page « Mon espace » (« Supprimer mon compte ») : le compte et le CV enregistré sont alors effacés immédiatement et définitivement de nos serveurs. Nous ne lisons pas tes documents, nous ne les vendons pas et nous ne les transmettons à personne. Nous ne t'envoyons aucun e-mail publicitaire.</p>
+<p>Chaque compte n'a accès qu'à ses propres données. Quand tu te déconnectes, ton CV est effacé de l'appareil utilisé : pense à te déconnecter sur un ordinateur partagé.</p>
 
 <h2>Pourquoi nous les traitons, et sur quelle base</h2>
 <ul>
   <li><strong>Fabriquer ton CV et ta lettre</strong> : c'est le service que tu demandes. Base légale : l'exécution du service que tu utilises.</li>
+  <li><strong>Gérer ton compte et conserver ton CV</strong>, si tu en crées un : même base légale, c'est toi qui le demandes en t'inscrivant.</li>
   <li><strong>Protéger le site contre les abus et assurer sa sécurité</strong> (journaux techniques, limite du nombre de documents par minute) : base légale, notre intérêt légitime à faire fonctionner un service fiable.</li>
 </ul>
 <p>Nous ne faisons ni publicité ciblée, ni profilage, ni décision automatisée à ton sujet.</p>
@@ -28,7 +41,7 @@
 <p>Dans l'éditeur, le bouton « Tout effacer » supprime tout ce qui est enregistré sur ton appareil. Tu peux aussi effacer les données du site depuis les réglages de ton navigateur. Sur un ordinateur partagé (cybercafé, école), pense à le faire avant de partir, et à supprimer le PDF du dossier « Téléchargements ».</p>
 
 <h2>Cookies et mesure d'audience</h2>
-<p>Le site n'utilise ni cookie, ni outil de suivi, ni service tiers de mesure d'audience, ni police ou script chargé depuis un autre site. Le seul stockage utilisé est le stockage local de ton navigateur décrit plus haut, indispensable pour conserver ton CV : il ne nécessite donc pas ton consentement.</p>
+<p>Le site n'utilise ni cookie publicitaire, ni outil de suivi, ni service tiers de mesure d'audience, ni police ou script chargé depuis un autre site. Il utilise seulement le stockage local de ton navigateur décrit plus haut, et, si tu te connectes à un compte, un cookie de session qui te garde connecté pendant 30 jours au plus. Les deux sont indispensables au fonctionnement que tu demandes : ils ne nécessitent donc pas ton consentement. Le cookie est supprimé quand tu te déconnectes.</p>
 
 <h2>Journaux techniques</h2>
 <p>Comme tout site web, notre hébergeur enregistre pour chaque visite l'adresse IP, la date, la page demandée et le type de navigateur. Ces journaux servent à assurer la sécurité du service et à limiter les abus. Durée de conservation : {{ champ("duree_journaux", "durée, par exemple « 12 mois »") }}.</p>
@@ -43,18 +56,18 @@
 <p>Si tu utilises un bouton de partage (WhatsApp par exemple), c'est l'application concernée qui s'ouvre, avec un message contenant uniquement l'adresse du site. Ton CV n'est pas partagé. Les règles de confidentialité de cette application s'appliquent.</p>
 
 <h2>Sécurité</h2>
-<p>Les échanges avec le site sont chiffrés (HTTPS). Chaque document est fabriqué dans un dossier isolé, supprimé aussitôt après. Le site ne charge aucun script extérieur. Aucun système n'étant parfaitement sûr, nous te conseillons de ne pas mettre sur ton CV d'informations dont tu n'as pas besoin (numéro de pièce d'identité, adresse complète…).</p>
+<p>Les échanges avec le site sont chiffrés (HTTPS). Chaque document est fabriqué dans un dossier isolé, supprimé aussitôt après. Les mots de passe ne sont jamais enregistrés en clair, et les tentatives de connexion répétées sont bloquées. Le site ne charge aucun script extérieur. Aucun système n'étant parfaitement sûr, nous te conseillons de ne pas mettre sur ton CV d'informations dont tu n'as pas besoin (numéro de pièce d'identité, adresse complète…).</p>
 
 <h2>Mineurs</h2>
-<p>Le service peut être utilisé par des jeunes qui cherchent un stage ou un premier emploi. Comme nous ne conservons pas les informations saisies et ne créons pas de compte, aucune donnée de mineur n'est enregistrée de notre côté. Si tu es mineur, il est préférable de demander l'aide d'un parent ou d'un enseignant pour décider des informations à mettre sur ton CV.</p>
+<p>Le service peut être utilisé par des jeunes qui cherchent un stage ou un premier emploi. Sans compte, aucune donnée n'est enregistrée de notre côté. La création d'un compte est réservée aux personnes ayant l'âge de consentir seules au traitement de leurs données dans leur pays (15 ans en France, par exemple) ; en dessous, demande l'accord d'un parent. Si tu es mineur, il est préférable de demander l'aide d'un parent ou d'un enseignant pour décider des informations à mettre sur ton CV.</p>
 
 <h2>Tes droits</h2>
-<p>Tu as le droit de demander l'accès aux données que nous détenons à ton sujet, de les faire corriger ou supprimer, d'en limiter l'utilisation, de t'opposer à leur traitement et d'en obtenir une copie. En pratique, nous ne détenons que les journaux techniques décrits plus haut, liés à une adresse IP : pour que nous puissions les retrouver, indique-nous ton adresse IP et la date de ta visite.</p>
+<p>Tu as le droit de demander l'accès aux données que nous détenons à ton sujet, de les faire corriger ou supprimer, d'en limiter l'utilisation, de t'opposer à leur traitement et d'en obtenir une copie. Si tu as un compte, tu vois et modifies tes données directement dans l'éditeur, et la page « Mon espace » te permet d'en télécharger une copie, de changer ton mot de passe et de tout supprimer. Sans compte, nous ne détenons que les journaux techniques décrits plus haut, liés à une adresse IP : pour que nous puissions les retrouver, indique-nous ton adresse IP et la date de ta visite.</p>
 <p>Écris à {{ champ("email", "adresse e-mail") }}. Nous répondons dans un délai d'un mois.</p>
 <p>Si tu estimes que tes droits ne sont pas respectés, tu peux saisir l'autorité de protection des données de ton pays : la CNIL en France, la CDP au Sénégal, l'ARTCI en Côte d'Ivoire, ou l'autorité équivalente ailleurs.</p>
 
 <h2>Modifications</h2>
-<p>Si notre façon de traiter les données change (par exemple avec l'ajout de comptes ou de fonctions payantes), cette page sera mise à jour avant le changement, et la date ci-dessous modifiée.</p>
+<p>Si notre façon de traiter les données change (par exemple avec l'ajout de fonctions payantes), cette page sera mise à jour avant le changement, et la date ci-dessous modifiée.</p>
 
 <p class="note">Dernière mise à jour : {{ champ("date_mise_a_jour", "date") }}.</p>
 {% endblock %}

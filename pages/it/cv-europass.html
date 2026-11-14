@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titre %}CV europeo (stile Europass): la guida{% endblock %}
+{% block description %}Come presentare un CV per candidarsi in Europa: struttura Europass, livelli di lingua da A1 a C2, foto o no. Modello gratuito in PDF.{% endblock %}
+{% block contenu %}
+<h1>CV europeo: come presentarlo</h1>
+<p class="chapeau">Per candidarsi in Francia, in Italia, in Belgio, in Germania o altrove nell'Unione europea, un'impaginazione chiara e standardizzata rassicura il selezionatore. Il formato Europass, creato dall'Unione europea, è il riferimento.</p>
+
+<h2>La struttura attesa</h2>
+<ol>
+  <li><strong>Informazioni personali</strong>: nome, indirizzo, telefono con prefisso internazionale, e-mail.</li>
+  <li><strong>Posizione desiderata</strong>: il titolo esatto dell'annuncio.</li>
+  <li><strong>Esperienza professionale</strong>, dalla più recente alla più lontana: date, ruolo, datore di lavoro, città, mansioni principali.</li>
+  <li><strong>Istruzione e formazione</strong>, nello stesso ordine.</li>
+  <li><strong>Competenze</strong>: lingue, strumenti digitali, patente di guida.</li>
+</ol>
+
+<h2>I livelli di lingua: da A1 a C2</h2>
+<p>In Europa il livello di lingua si esprime con il Quadro comune europeo di riferimento per le lingue (QCER):</p>
+<ul>
+  <li><strong>A1, A2</strong>: livello base, te la cavi in situazioni semplici;</li>
+  <li><strong>B1, B2</strong>: livello autonomo, puoi lavorare e seguire una riunione;</li>
+  <li><strong>C1, C2</strong>: livello avanzato, ti esprimi con scioltezza e precisione.</li>
+</ul>
+<p>La lingua madre si indica a parte, senza livello. Se hai una certificazione linguistica (DELF, DALF, TOEFL, IELTS, CILS…), citala con il punteggio.</p>
+
+<h2>Foto, età, situazione familiare?</h2>
+<p>Le abitudini cambiano da un paese all'altro. Nel Regno Unito e in Irlanda non si mettono né foto né data di nascita. In Francia e in Italia la foto è facoltativa. Nel dubbio, lascia vuote queste sezioni: un CV senza foto non viene mai scartato per questo motivo, e la legge vieta ai selezionatori europei di scegliere in base a questi criteri.</p>
+
+<h2>Titoli di studio ottenuti fuori dall'Europa</h2>
+<p>Scrivi il titolo originale, poi il suo equivalente tra parentesi, per esempio «Licence (laurea triennale, equivalente a un Bachelor)». Per alcune professioni è richiesto il riconoscimento ufficiale del titolo: informati presso il centro ENIC-NARIC del paese in cui ti candidi.</p>
+
+<h2>Buono a sapersi</h2>
+<p>Il nostro modello «Europeo» si ispira all'impaginazione Europass (etichette a sinistra, contenuto a destra). Non è lo strumento ufficiale dell'Unione europea; se un annuncio richiede «un CV Europass» creato sul portale ufficiale, usa quello.</p>
+
+<aside class="appel">
+  <p>Il modello «Europeo» applica questa struttura, in francese, in inglese o in italiano.</p>
+  <a href="{{ p }}/creer?modele=europeen&amp;exemple=1" class="bouton principal grand">Crea il mio CV europeo</a>
+  <a href="/exemple/europeen.pdf" target="_blank" rel="noopener" class="bouton grand">Vedi un esempio in PDF</a>
+</aside>
+{% endblock %}

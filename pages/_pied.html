@@ -1,15 +1,12 @@
 <footer class="pied">
   <div class="pied-haut">
     <span class="logo">CV<span>.</span>express</span>
-    <span>Tes données restent dans ton navigateur : rien n'est conservé sur le serveur.</span>
+    <span>{{ c.pied }}</span>
   </div>
-  <nav class="pied-liens" aria-label="Guides et informations">
-    <a href="/modele-cv-afrique">CV en Afrique</a>
-    <a href="/cv-europass">CV européen</a>
-    <a href="/cv-sans-experience">CV sans expérience</a>
-    <a href="/lettre-de-motivation">Lettre de motivation</a>
-    <a href="/mentions-legales">Mentions légales</a>
-    <a href="/confidentialite">Confidentialité</a>
-    <a href="/conditions">Conditions d'utilisation</a>
+  <nav class="pied-liens" aria-label="{{ c.pied_nav }}">
+    {%- for adresse, libelle in c.liens %}
+    <a href="{{ p }}/{{ adresse }}">{{ libelle }}</a>
+    {%- endfor %}
   </nav>
+  {% include "_langues.html" %}
 </footer>

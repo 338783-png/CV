@@ -1,40 +1,50 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ langue }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CV.express — ton CV et ta lettre de motivation en PDF</title>
-  <meta name="description" content="Crée ton CV et ta lettre de motivation en PDF en quelques minutes. Modèles européens et africains, gratuit et sans inscription.">
+  <title>{{ a.titre_page }}</title>
+  <meta name="description" content="{{ a.description }}">
   <link rel="canonical" href="{{ url_page }}">
+  {%- for code, _, _, adresse in versions %}
+  <link rel="alternate" hreflang="{{ code }}" href="{{ adresse }}">
+  {%- endfor %}
   <meta property="og:type" content="website">
-  <meta property="og:title" content="CV.express — ton CV et ta lettre de motivation en PDF">
-  <meta property="og:description" content="Modèles de CV européens et africains, lettre de motivation incluse. Gratuit, sans inscription.">
+  <meta property="og:title" content="{{ a.titre_page }}">
+  <meta property="og:description" content="{{ a.og_description }}">
   <meta property="og:url" content="{{ url_page }}">
   <meta property="og:image" content="{{ racine }}img/modele_moderne.png">
-  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Est-ce vraiment gratuit ?", "acceptedAnswer": {"@type": "Answer", "text": "Oui. Tu peux créer, modifier et télécharger ton CV et ta lettre de motivation en PDF sans payer et sans créer de compte."}}, {"@type": "Question", "name": "Faut-il créer un compte ?", "acceptedAnswer": {"@type": "Answer", "text": "Non. Ce que tu saisis est enregistré dans ton navigateur : tu le retrouves en revenant sur le site depuis le même appareil."}}, {"@type": "Question", "name": "Est-ce que ça marche sur téléphone ?", "acceptedAnswer": {"@type": "Answer", "text": "Oui. Le formulaire et l'aperçu fonctionnent dans le navigateur de ton téléphone, et le PDF se télécharge ou se partage directement."}}, {"@type": "Question", "name": "Mon CV sera-t-il lu par les logiciels de tri (ATS) ?", "acceptedAnswer": {"@type": "Answer", "text": "Le texte du PDF est du vrai texte, que ces logiciels peuvent lire. Le modèle Classique, sur une seule colonne, est le plus sûr pour cet usage."}}, {"@type": "Question", "name": "Mon nom contient des lettres comme ɛ, ɔ ou ŋ. Est-ce pris en charge ?", "acceptedAnswer": {"@type": "Answer", "text": "Oui. Les lettres des langues africaines écrites en alphabet latin s'affichent correctement dans le PDF."}}, {"@type": "Question", "name": "Que deviennent mes informations ?", "acceptedAnswer": {"@type": "Answer", "text": "Elles restent sur ton appareil. Le serveur ne les reçoit que le temps de fabriquer le PDF et ne les conserve pas."}}]}</script>
+  {#- Les questions fréquentes, pour les moteurs de recherche. tojson protège tous les caractères. #}
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+    {%- for question, reponse in a.faq %}{"@type": "Question", "name": {{ question|tojson }}, "acceptedAnswer": {"@type": "Answer", "text": {{ reponse|tojson }}}}{% if not loop.last %}, {% endif %}{% endfor -%}
+  ]}</script>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="page-accueil">
 
 <header class="entete">
-  <a href="/" class="logo">CV<span>.</span>express</a>
-  <a href="/creer" class="bouton principal">Créer mon CV</a>
+  <a href="{{ p }}/" class="logo">CV<span>.</span>express</a>
+  <nav class="entete-actions" aria-label="{{ c.acces }}">
+    {% include "_langues.html" %}
+    <a href="{{ p }}/compte" class="bouton" data-lien-compte>{{ c.connexion }}</a>
+    <a href="{{ p }}/creer" class="bouton principal">{{ c.creer }}</a>
+  </nav>
 </header>
 
 <section class="accueil">
   <div class="accueil-texte">
-    <p class="badge">Gratuit · Sans inscription</p>
-    <h1>Un CV qui donne envie de te <em>rappeler</em>.</h1>
-    <p class="accroche">Remplis le formulaire, choisis ton modèle, télécharge ton PDF.
-      Présentations européennes et africaines, lettre de motivation incluse.</p>
+    <p class="badge">{{ a.badge }}</p>
+    <h1>{{ a.h1|safe }}</h1>
+    <p class="accroche">{{ a.accroche }}</p>
     <div class="accueil-actions">
-      <a href="/creer" class="bouton principal grand">Créer mon CV</a>
-      <a href="/creer?exemple=1" class="bouton fantome grand">Voir un exemple</a>
+      <a href="{{ p }}/creer" class="bouton principal grand">{{ c.creer }}</a>
+      <a href="{{ p }}/creer?exemple=1" class="bouton fantome grand">{{ a.exemple }}</a>
     </div>
+    <p class="accueil-import"><a href="{{ p }}/creer?importer=1">{{ a.deja }}</a></p>
     <ul class="atouts">
-      <li><strong>4 modèles</strong> soignés</li>
-      <li><strong>3 langues</strong> FR · EN · IT</li>
-      <li><strong>PDF</strong> prêt à envoyer</li>
+      {%- for atout in a.atouts %}
+      <li>{{ atout|safe }}</li>
+      {%- endfor %}
     </ul>
   </div>
   <div class="accueil-visuel" aria-hidden="true">
@@ -45,87 +55,60 @@
 </section>
 
 <section class="bloc" id="modeles">
-  <h2>Choisis ton style</h2>
-  <p class="sous-titre">Quatre présentations, six couleurs. Tu peux en changer à tout moment sans rien ressaisir.</p>
+  <h2>{{ a.style_titre }}</h2>
+  <p class="sous-titre">{{ a.style_texte }}</p>
   <div class="vitrine">
+    {%- for modele, nom, alt, texte in a.modeles %}
     <div class="vitrine-carte">
-      <a href="/exemple/moderne.pdf" target="_blank" rel="noopener" title="Ouvrir l'exemple en PDF"><img src="/img/modele_moderne.png" alt="Aperçu du modèle moderne" loading="lazy" width="480" height="679"></a>
-      <h3>Moderne</h3>
-      <p>Bandeau de couleur et photo ronde. Pour se démarquer.</p>
+      <a href="/exemple/{{ modele }}.pdf" target="_blank" rel="noopener" title="{{ a.ouvrir_titre }}"><img src="/img/modele_{{ modele }}.png" alt="{{ alt }}" loading="lazy" width="480" height="679"></a>
+      <h3>{{ nom }}</h3>
+      <p>{{ texte }}</p>
       <div class="vitrine-actions">
-        <a href="/exemple/moderne.pdf" target="_blank" rel="noopener" class="bouton">Ouvrir le PDF</a>
-        <a href="/creer?modele=moderne&amp;exemple=1" class="bouton principal">Utiliser</a>
+        <a href="/exemple/{{ modele }}.pdf" target="_blank" rel="noopener" class="bouton">{{ a.ouvrir }}</a>
+        <a href="{{ p }}/creer?modele={{ modele }}&amp;exemple=1" class="bouton principal">{{ a.utiliser }}</a>
       </div>
     </div>
-    <div class="vitrine-carte">
-      <a href="/exemple/classique.pdf" target="_blank" rel="noopener" title="Ouvrir l'exemple en PDF"><img src="/img/modele_classique.png" alt="Aperçu du modèle classique" loading="lazy" width="480" height="679"></a>
-      <h3>Classique</h3>
-      <p>Sobre, une colonne. Idéal pour les logiciels de tri (ATS).</p>
-      <div class="vitrine-actions">
-        <a href="/exemple/classique.pdf" target="_blank" rel="noopener" class="bouton">Ouvrir le PDF</a>
-        <a href="/creer?modele=classique&amp;exemple=1" class="bouton principal">Utiliser</a>
-      </div>
-    </div>
-    <div class="vitrine-carte">
-      <a href="/exemple/europeen.pdf" target="_blank" rel="noopener" title="Ouvrir l'exemple en PDF"><img src="/img/modele_europeen.png" alt="Aperçu du modèle européen" loading="lazy" width="480" height="679"></a>
-      <h3>Européen</h3>
-      <p>Inspiré d'Europass, attendu dans beaucoup de pays de l'UE.</p>
-      <div class="vitrine-actions">
-        <a href="/exemple/europeen.pdf" target="_blank" rel="noopener" class="bouton">Ouvrir le PDF</a>
-        <a href="/creer?modele=europeen&amp;exemple=1" class="bouton principal">Utiliser</a>
-      </div>
-    </div>
-    <div class="vitrine-carte">
-      <a href="/exemple/africain.pdf" target="_blank" rel="noopener" title="Ouvrir l'exemple en PDF"><img src="/img/modele_africain.png" alt="Aperçu du modèle africain" loading="lazy" width="480" height="679"></a>
-      <h3>Africain</h3>
-      <p>État civil complet, photo, références, mention sur l'honneur.</p>
-      <div class="vitrine-actions">
-        <a href="/exemple/africain.pdf" target="_blank" rel="noopener" class="bouton">Ouvrir le PDF</a>
-        <a href="/creer?modele=africain&amp;exemple=1" class="bouton principal">Utiliser</a>
-      </div>
-    </div>
+    {%- endfor %}
   </div>
 </section>
 
 <section class="bloc bloc-teinte">
-  <h2>Trois étapes, c'est tout</h2>
+  <h2>{{ a.etapes_titre }}</h2>
   <ol class="etapes">
-    <li><h3>Remplis</h3><p>Ton parcours, tes compétences, tes langues. Tout est enregistré dans ton navigateur au fur et à mesure.</p></li>
-    <li><h3>Choisis</h3><p>Modèle, couleur, langue du document. L'aperçu se met à jour pendant que tu écris.</p></li>
-    <li><h3>Télécharge</h3><p>Un PDF net, au format A4, prêt à être envoyé ou imprimé. La lettre de motivation suit le même chemin.</p></li>
+    {%- for titre, texte in a.etapes %}
+    <li><h3>{{ titre }}</h3><p>{{ texte }}</p></li>
+    {%- endfor %}
   </ol>
-  <p class="centre"><a href="/creer" class="bouton principal grand">Commencer maintenant</a></p>
+  <p class="centre"><a href="{{ p }}/creer" class="bouton principal grand">{{ a.commencer }}</a></p>
 </section>
 
 <section class="bloc" id="guides">
-  <h2>Des conseils selon ta situation</h2>
-  <p class="sous-titre">Les usages ne sont pas les mêmes à Dakar, à Abidjan ou à Milan. Ces guides t'expliquent quoi mettre, et dans quel ordre.</p>
+  <h2>{{ a.guides_titre }}</h2>
+  <p class="sous-titre">{{ a.guides_texte }}</p>
   <div class="guides">
-    <a href="/modele-cv-afrique"><h3>CV en Afrique francophone</h3><p>État civil, photo, références : ce que les recruteurs attendent.</p></a>
-    <a href="/cv-europass"><h3>CV européen</h3><p>Structure Europass, niveaux de langue de A1 à C2, photo ou non.</p></a>
-    <a href="/cv-sans-experience"><h3>CV sans expérience</h3><p>Étudiant ou premier emploi : quoi écrire quand on débute.</p></a>
-    <a href="/lettre-de-motivation"><h3>Lettre de motivation</h3><p>La présentation attendue et le plan en trois paragraphes.</p></a>
+    {%- for adresse, titre, texte in a.guides %}
+    <a href="{{ p }}/{{ adresse }}"><h3>{{ titre }}</h3><p>{{ texte }}</p></a>
+    {%- endfor %}
   </div>
 </section>
 
 <section class="bloc bloc-teinte" id="questions">
-  <h2>Questions fréquentes</h2>
+  <h2>{{ a.faq_titre }}</h2>
   <div class="faq">
-    <details><summary>Est-ce vraiment gratuit ?</summary><p>Oui. Tu peux créer, modifier et télécharger ton CV et ta lettre de motivation en PDF sans payer et sans créer de compte.</p></details>
-    <details><summary>Faut-il créer un compte ?</summary><p>Non. Ce que tu saisis est enregistré dans ton navigateur : tu le retrouves en revenant sur le site depuis le même appareil.</p></details>
-    <details><summary>Est-ce que ça marche sur téléphone ?</summary><p>Oui. Le formulaire et l'aperçu fonctionnent dans le navigateur de ton téléphone, et le PDF se télécharge ou se partage directement.</p></details>
-    <details><summary>Mon CV sera-t-il lu par les logiciels de tri (ATS) ?</summary><p>Le texte du PDF est du vrai texte, que ces logiciels peuvent lire. Le modèle Classique, sur une seule colonne, est le plus sûr pour cet usage.</p></details>
-    <details><summary>Mon nom contient des lettres comme ɛ, ɔ ou ŋ. Est-ce pris en charge ?</summary><p>Oui. Les lettres des langues africaines écrites en alphabet latin s'affichent correctement dans le PDF.</p></details>
-    <details><summary>Que deviennent mes informations ?</summary><p>Elles restent sur ton appareil. Le serveur ne les reçoit que le temps de fabriquer le PDF et ne les conserve pas.</p></details>
+    {%- for question, reponse in a.faq %}
+    <details><summary>{{ question }}</summary><p>{{ reponse }}</p></details>
+    {%- endfor %}
   </div>
   <p class="centre">
-    <a href="/creer" class="bouton principal grand">Créer mon CV</a>
-    <a data-partage hidden class="bouton grand" target="_blank" rel="noopener">Partager sur WhatsApp</a>
+    <a href="{{ p }}/creer" class="bouton principal grand">{{ c.creer }}</a>
+    <a data-partage="{{ a.partage_message }}" hidden class="bouton grand" target="_blank" rel="noopener">{{ a.partager }}</a>
   </p>
 </section>
 
 {% include "_pied.html" %}
 <script src="/partage.js"></script>
+<script src="/traductions.js"></script>
+<script src="/entete.js"></script>
 
 </body>
 </html>

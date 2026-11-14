@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titre %}European CV (Europass style): the guide{% endblock %}
+{% block description %}How to lay out a CV to apply in Europe: Europass structure, language levels A1 to C2, photo or not. Free PDF template.{% endblock %}
+{% block contenu %}
+<h1>European CV: how to lay it out</h1>
+<p class="chapeau">To apply in France, Italy, Belgium, Germany or elsewhere in the European Union, a clear, standardised layout reassures the recruiter. The Europass format, created by the European Union, is the reference.</p>
+
+<h2>The expected structure</h2>
+<ol>
+  <li><strong>Personal information</strong>: name, address, phone with international code, e-mail.</li>
+  <li><strong>Position sought</strong>: the exact job title from the advert.</li>
+  <li><strong>Work experience</strong>, from the most recent to the oldest: dates, position, employer, city, main tasks.</li>
+  <li><strong>Education and training</strong>, in the same order.</li>
+  <li><strong>Skills</strong>: languages, digital tools, driving licence.</li>
+</ol>
+
+<h2>Language levels: from A1 to C2</h2>
+<p>In Europe, language ability is expressed with the Common European Framework of Reference for Languages (CEFR):</p>
+<ul>
+  <li><strong>A1, A2</strong>: basic user, you get by in simple situations;</li>
+  <li><strong>B1, B2</strong>: independent user, you can work and follow a meeting;</li>
+  <li><strong>C1, C2</strong>: proficient user, you express yourself fluently and precisely.</li>
+</ul>
+<p>Your mother tongue is listed separately, without a level. If you hold a language certificate (DELF, DALF, TOEFL, IELTS, CILS…), mention it with your score.</p>
+
+<h2>Photo, age, family situation?</h2>
+<p>Customs vary from one country to another. In the United Kingdom and Ireland, people include neither a photo nor a date of birth. In France and Italy, the photo is optional. If in doubt, leave these sections empty: a CV without a photo is never rejected for that reason, and the law forbids European recruiters from sorting applicants on these criteria.</p>
+
+<h2>Qualifications obtained outside Europe</h2>
+<p>Write the original title, then its equivalent in brackets, for example “Licence (three-year degree, equivalent to a Bachelor's)”. For some professions, official recognition of the qualification is required: ask the ENIC-NARIC centre of the country you are applying to.</p>
+
+<h2>Good to know</h2>
+<p>Our “European” template is inspired by the Europass layout (labels on the left, content on the right). It is not the official tool of the European Union; if an advert requires “a Europass CV” created on the official portal, use that one.</p>
+
+<aside class="appel">
+  <p>The “European” template applies this structure, in French, English or Italian.</p>
+  <a href="{{ p }}/creer?modele=europeen&amp;exemple=1" class="bouton principal grand">Create my European CV</a>
+  <a href="/exemple/europeen.pdf" target="_blank" rel="noopener" class="bouton grand">See an example PDF</a>
+</aside>
+{% endblock %}
