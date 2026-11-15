@@ -3,7 +3,7 @@ Le site web : page d'accueil + éditeur (dossier web/) + une API qui fabrique le
 Les comptes utilisateurs (facultatifs) sont dans comptes.py.
 
 En développement :   .venv/bin/python app.py        puis ouvrir http://localhost:5000
-En production    :   gunicorn -w 1 --threads 8 -b 0.0.0.0:8000 app:app   (voir Dockerfile)
+En production    :   gunicorn -w 1 --threads 16 -b 0.0.0.0:8000 app:app   (voir Dockerfile)
                      Un seul processus (-w 1) : la limite de débit est comptée en mémoire.
 """
 import base64
@@ -20,6 +20,7 @@ from markupsafe import Markup, escape
 import comptes
 import importer
 import moteur
+import requetes
 import textes
 
 # web/ : fichiers servis tels quels (CSS, JS, images, éditeur) ; pages/ : pages HTML
@@ -271,7 +272,7 @@ def exemple_pdf(modele):
 def fabriquer_pdf():
     """Lit la requête {type, cv, lettre, options} et renvoie (pdf, nom de fichier).
     Lève ErreurDonnees / ErreurCompilation."""
-    corps = request.get_json(silent=True)
+    corps = requetes.lire_json()
     if not isinstance(corps, dict):
         raise moteur.ErreurDonnees("Requête invalide.")
     if corps.get("type") == "lettre":
@@ -299,6 +300,12 @@ def avec_erreurs(vue):
                 return vue()
         except moteur.ErreurDonnees as e:
             return jsonify(erreur=str(e)), 400
+        except moteur.ServeurOccupe:
+            # Toutes les places de compilation sont prises depuis trop longtemps : on libère
+            # ce fil tout de suite plutôt que de le laisser bloqué (les pages restent servies).
+            reponse = jsonify(erreur="Beaucoup de demandes en ce moment. Réessaie dans quelques secondes.")
+            reponse.headers["Retry-After"] = "10"
+            return reponse, 503
         except moteur.ErreurCompilation as e:
             # Le détail (log LaTeX) va dans les logs du serveur, pas chez l'utilisateur.
             app.logger.error("%s", e)
@@ -338,6 +345,12 @@ def importer_document():
     if not octets:
         raise moteur.ErreurDonnees("Aucun fichier reçu.")
     return jsonify(importer.importer(octets, type_document))
+
+
+@app.errorhandler(RecursionError)
+def trop_imbrique(_):
+    # Filet de sécurité : la lecture du JSON (requetes.lire_json) refuse déjà ce cas.
+    return jsonify(erreur="Requête invalide."), 400
 
 
 @app.errorhandler(413)

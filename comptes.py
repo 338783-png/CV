@@ -40,6 +40,8 @@ from urllib.parse import urlsplit
 from flask import Blueprint, current_app, jsonify, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import requetes
+
 RACINE = Path(__file__).parent
 DOSSIER = Path(os.environ.get("DOSSIER_DONNEES") or RACINE / "donnees")
 BASE = DOSSIER / "comptes.sqlite3"
@@ -165,6 +167,11 @@ def initialiser(app):
             b.execute("""INSERT INTO documents (compte_id, nom, contenu, modifie_le)
                          SELECT compte_id, 'Mon CV', contenu, modifie_le FROM donnees""")
             b.execute("DROP TABLE donnees")
+        # Numéro de version de chaque document, augmenté à chaque enregistrement : un appareil
+        # qui enregistre une version périmée est refusé (409) au lieu d'écraser le travail fait
+        # entre-temps sur un autre appareil.
+        if "version" not in {colonne[1] for colonne in b.execute("PRAGMA table_info(documents)")}:
+            b.execute("ALTER TABLE documents ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
     for fichier in DOSSIER.glob("comptes.sqlite3*"):     # base et ses fichiers -wal / -shm
         os.chmod(fichier, 0o600)
 
@@ -187,6 +194,53 @@ def initialiser(app):
         PERMANENT_SESSION_LIFETIME=timedelta(days=SESSION_JOURS),
     )
     app.register_blueprint(comptes)
+    if SAUVEGARDE_HEURES > 0:
+        threading.Thread(target=_sauvegardes_regulieres, args=(app.logger,), daemon=True,
+                         name="sauvegardes").start()
+
+
+# --------------------------------------------------------------------------
+# Sauvegardes automatiques de la base
+# --------------------------------------------------------------------------
+# Une copie cohérente (API de sauvegarde de SQLite : sûre même pendant les écritures) toutes
+# les SAUVEGARDE_HEURES heures dans donnees/sauvegardes/, les SAUVEGARDES_GARDEES plus récentes
+# conservées. Ces copies sont sur le MÊME disque : elles protègent d'une erreur ou d'une base
+# abîmée, pas de la perte du disque. Prévoir aussi une copie ailleurs (voir README).
+# Lancement manuel (tâche cron de l'hébergeur) : python -m comptes sauvegarder
+SAUVEGARDE_HEURES = float(os.environ.get("SAUVEGARDE_HEURES") or 24)
+SAUVEGARDES_GARDEES = int(os.environ.get("SAUVEGARDES_GARDEES") or 14)
+SAUVEGARDES = DOSSIER / "sauvegardes"
+_verrou_sauvegarde = threading.Lock()
+
+
+def sauvegarder_base():
+    """Écrit une copie de la base ; renvoie son chemin. Supprime les copies les plus anciennes."""
+    with _verrou_sauvegarde:
+        SAUVEGARDES.mkdir(mode=0o700, exist_ok=True)
+        cible = SAUVEGARDES / time.strftime("comptes-%Y%m%d-%H%M%S.sqlite3")
+        source = sqlite3.connect(BASE, timeout=30)
+        try:
+            copie = sqlite3.connect(cible)
+            try:
+                source.backup(copie)
+            finally:
+                copie.close()
+        finally:
+            source.close()
+        os.chmod(cible, 0o600)
+        for ancienne in sorted(SAUVEGARDES.glob("comptes-*.sqlite3"))[:-SAUVEGARDES_GARDEES]:
+            ancienne.unlink()
+        return cible
+
+
+def _sauvegardes_regulieres(journal):
+    time.sleep(300)                          # pas pendant le démarrage du serveur
+    while True:
+        try:
+            journal.info("Sauvegarde de la base : %s", sauvegarder_base().name)
+        except (OSError, sqlite3.Error) as e:
+            journal.error("Sauvegarde de la base impossible : %s", e)
+        time.sleep(SAUVEGARDE_HEURES * 3600)
 
 
 # --------------------------------------------------------------------------
@@ -257,7 +311,7 @@ _EMPREINTE_BIDON = generate_password_hash(secrets.token_hex(16))
 
 
 def _corps():
-    corps = request.get_json(silent=True)
+    corps = requetes.lire_json()       # JSON invalide ou trop imbriqué -> {} (jamais d'erreur 500)
     return corps if isinstance(corps, dict) else {}
 
 
@@ -584,7 +638,7 @@ def _numero(valeur):
 
 def _contenu(donnees):
     """dict -> texte JSON à enregistrer ; lève ValueError si invalide ou trop gros."""
-    if not isinstance(donnees, dict):
+    if not isinstance(donnees, dict) or requetes.trop_imbrique(donnees):
         raise ValueError("Données invalides.")
     contenu = json.dumps(donnees, ensure_ascii=False, separators=(",", ":"))
     if len(contenu.encode("utf-8")) > DONNEES_MAX:
@@ -603,7 +657,7 @@ def _creer(b, compte_id, nom, contenu):
     if nombre >= DOCUMENTS_MAX:
         return None
     maintenant = int(time.time())
-    curseur = b.execute("INSERT INTO documents (compte_id, nom, contenu, modifie_le) VALUES (?, ?, ?, ?)",
+    curseur = b.execute("INSERT INTO documents (compte_id, nom, contenu, modifie_le, version) VALUES (?, ?, ?, ?, 1)",
                         (compte_id, _nom(nom, f"Document {nombre + 1}"), contenu, maintenant))
     return curseur.lastrowid, maintenant
 
@@ -621,22 +675,24 @@ def lire_donnees():
     demande = request.args.get("doc")
     with _base() as b:
         if demande is not None:
-            ligne = b.execute("SELECT id, nom, contenu, modifie_le FROM documents WHERE id = ? AND compte_id = ?",
+            ligne = b.execute("SELECT id, nom, contenu, modifie_le, version FROM documents WHERE id = ? AND compte_id = ?",
                               (_numero(demande), compte[0])).fetchone()
             if not ligne:
                 return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
         else:
-            ligne = b.execute("""SELECT id, nom, contenu, modifie_le FROM documents WHERE compte_id = ?
+            ligne = b.execute("""SELECT id, nom, contenu, modifie_le, version FROM documents WHERE compte_id = ?
                                  ORDER BY modifie_le DESC, id DESC LIMIT 1""", (compte[0],)).fetchone()
     if not ligne:
-        return jsonify(donnees=None, modifie_le=None, doc=None)
-    return jsonify(doc=ligne[0], nom=ligne[1], donnees=json.loads(ligne[2]), modifie_le=ligne[3])
+        return jsonify(donnees=None, modifie_le=None, doc=None, version=None)
+    return jsonify(doc=ligne[0], nom=ligne[1], donnees=json.loads(ligne[2]), modifie_le=ligne[3], version=ligne[4])
 
 
 @comptes.put("/donnees")
 def ecrire_donnees():
     """Enregistre un document : celui indiqué (?doc=…) ; sans numéro, le plus récent,
-    ou un nouveau si le compte n'en a pas ou si « nouveau » est demandé."""
+    ou un nouveau si le compte n'en a pas ou si « nouveau » est demandé.
+    « version » : la version sur laquelle l'appareil a travaillé. Si le document a été
+    enregistré entre-temps ailleurs, refus (409) : rien n'est écrasé, l'appareil décide."""
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
@@ -662,12 +718,25 @@ def ecrire_donnees():
             cree = _creer(b, compte[0], corps.get("nom"), contenu)
             if cree is None:
                 return _trop_de_documents()
-            return jsonify(doc=cree[0], modifie_le=cree[1]), 201
-        modifies = b.execute("UPDATE documents SET contenu = ?, modifie_le = ? WHERE id = ? AND compte_id = ?",
-                             (contenu, maintenant, numero, compte[0])).rowcount
-    if not modifies:
+            return jsonify(doc=cree[0], modifie_le=cree[1], version=1), 201
+        attendue = corps.get("version")
+        if attendue is None:          # appareil sans gestion des versions (ancienne page encore ouverte)
+            modifies = b.execute("""UPDATE documents SET contenu = ?, modifie_le = ?, version = version + 1
+                                    WHERE id = ? AND compte_id = ?""", (contenu, maintenant, numero, compte[0])).rowcount
+        elif isinstance(attendue, int) and not isinstance(attendue, bool):
+            modifies = b.execute("""UPDATE documents SET contenu = ?, modifie_le = ?, version = version + 1
+                                    WHERE id = ? AND compte_id = ? AND version = ?""",
+                                 (contenu, maintenant, numero, compte[0], attendue)).rowcount
+        else:
+            return jsonify(erreur="Données invalides."), 400
+        actuel = b.execute("SELECT version, modifie_le FROM documents WHERE id = ? AND compte_id = ?",
+                           (numero, compte[0])).fetchone()
+    if not actuel:
         return jsonify(erreur="Ce document n'existe pas ou n'existe plus."), 404
-    return jsonify(doc=numero, modifie_le=maintenant)
+    if not modifies:
+        return jsonify(erreur="Ce document a été modifié sur un autre appareil entre-temps.",
+                       conflit=True, doc=numero, version=actuel[0], modifie_le=actuel[1]), 409
+    return jsonify(doc=numero, modifie_le=actuel[1], version=actuel[0])
 
 
 @comptes.get("/documents")
@@ -678,15 +747,15 @@ def lister_documents():
     if not compte:
         return _non_connecte()
     with _base() as b:
-        lignes = b.execute("""SELECT id, nom, contenu, modifie_le FROM documents WHERE compte_id = ?
+        lignes = b.execute("""SELECT id, nom, contenu, modifie_le, version FROM documents WHERE compte_id = ?
                               ORDER BY modifie_le DESC, id DESC""", (compte[0],)).fetchall()
     documents = []
-    for numero, nom, contenu, modifie_le in lignes:
+    for numero, nom, contenu, modifie_le, version in lignes:
         donnees = json.loads(contenu)
         cv = donnees.get("cv")
         if isinstance(cv, dict) and cv.get("photo"):
             donnees["cv"] = {**cv, "photo": "", "a_une_photo": True}
-        documents.append({"doc": numero, "nom": nom, "modifie_le": modifie_le, "donnees": donnees})
+        documents.append({"doc": numero, "nom": nom, "modifie_le": modifie_le, "version": version, "donnees": donnees})
     return jsonify(documents=documents, maximum=DOCUMENTS_MAX)
 
 
@@ -708,7 +777,7 @@ def creer_document():
         cree = _creer(b, compte[0], nom, contenu)
     if cree is None:
         return _trop_de_documents()
-    return jsonify(doc=cree[0], modifie_le=cree[1]), 201
+    return jsonify(doc=cree[0], modifie_le=cree[1], version=1), 201
 
 
 @comptes.patch("/documents/<int:numero>")
@@ -760,3 +829,11 @@ def supprimer():
     session.clear()
     current_app.logger.info("Compte supprimé.")       # sans l'adresse : rien de personnel dans les journaux
     return jsonify(connecte=False)
+
+
+if __name__ == "__main__":
+    # python -m comptes sauvegarder : une sauvegarde de la base, tout de suite (tâche cron).
+    import sys
+    if sys.argv[1:] != ["sauvegarder"]:
+        sys.exit("Utilisation : python -m comptes sauvegarder")
+    print(sauvegarder_base())

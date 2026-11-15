@@ -843,15 +843,27 @@ function adresseDocument() {
 async function envoyer() {
   clearTimeout(minuterieEnvoi);
   if (!compte.connecte) return false;
-  let r = await api("PUT", adresseDocument(), { donnees: etat, nouveau: !lireSynchro().doc });
-  if (r.statut === 404) {
-    // Le document a été supprimé depuis un autre appareil : ce qui est ici devient un nouveau document.
+  const s = lireSynchro();
+  // « version » : celle sur laquelle cet appareil a travaillé. Si le document a été enregistré
+  // entre-temps sur un autre appareil, le serveur refuse (409) au lieu d'écraser ce travail.
+  const corps = { donnees: etat, nouveau: !s.doc };
+  if (s.doc && Number.isInteger(s.version)) corps.version = s.version;
+  let r = await api("PUT", adresseDocument(), corps);
+  let copie = false;
+  if (r.statut === 404 || (r.statut === 409 && r.corps.conflit)) {
+    // Document supprimé, ou modifié ailleurs entre-temps : rien n'est écrasé, ce qui est ici
+    // est enregistré comme un NOUVEAU document. Les deux versions restent dans le compte.
+    copie = r.statut === 409;
     ecrireSynchro({ sale: true });
-    r = await api("PUT", "/donnees", { donnees: etat, nouveau: true });
+    r = await api("PUT", "/donnees", { donnees: etat, nouveau: true,
+      nom: copie ? (window.tr || (t => t))("Version modifiée sur cet appareil") : undefined });
   }
   if (r.ok) {
-    ecrireSynchro({ doc: r.corps.doc, vu: r.corps.modifie_le, sale: false });
+    ecrireSynchro({ doc: r.corps.doc, vu: r.corps.modifie_le, version: r.corps.version, sale: false });
     afficherCompte("Ton CV est enregistré dans ton compte.");
+    if (copie) alert("Ce CV avait été modifié sur un autre appareil entre-temps. Pour ne rien perdre, "
+      + "tes modifications ont été enregistrées dans un nouveau document (« Version modifiée sur cet appareil »). "
+      + "Retrouve les deux versions dans « Mon espace ».");
   } else if (r.statut === 401) {
     compte = { connecte: false, email: null };
     afficherCompte();
@@ -865,7 +877,7 @@ async function envoyer() {
 function chargerDocument(reponse) {
   etat = fusionner({ ...reponse.donnees, type: parametres.get("type") === "lettre" ? "lettre" : etat.type });
   try { localStorage.setItem(CLE_STOCKAGE, JSON.stringify(etat)); } catch { /* stockage indisponible */ }
-  ecrireSynchro({ doc: reponse.doc, vu: reponse.modifie_le, sale: false });
+  ecrireSynchro({ doc: reponse.doc, vu: reponse.modifie_le, version: reponse.version, sale: false });
   toutDessiner(); actualiser();
 }
 
@@ -897,15 +909,18 @@ async function synchroniser() {
     r = await api("GET", "/donnees");
   }
   if (!r.ok) return;
-  const { donnees, modifie_le: date } = r.corps;
-  const compteNouveau = donnees && date !== s.vu;         // le compte a une version pas encore vue ici
+  const { donnees, modifie_le: date, version } = r.corps;
+  // Le compte a une version pas encore vue ici ? (numéro de version ; la date pour les
+  // appareils synchronisés avant l'arrivée des numéros de version)
+  const compteNouveau = donnees && (Number.isInteger(s.version) ? version !== s.version : date !== s.vu);
   const localModifie = !estVide(etat) && (s.sale || s.vu === undefined);
   let prendreCompte = compteNouveau;
   if (compteNouveau && localModifie && JSON.stringify(fusionner(donnees)) !== JSON.stringify(etat)) {
     prendreCompte = confirm("Ton compte contient un CV différent de celui de cet appareil.\n\n"
       + "OK : charger le CV de ton compte.\nAnnuler : garder celui de cet appareil (il sera ajouté à ton compte).");
-    // Garder celui de l'appareil : il devient un NOUVEAU document, rien n'est écrasé dans le compte.
-    if (!prendreCompte && !s.doc) ecrireSynchro({ sale: true });
+    // Garder celui de l'appareil : il devient un NOUVEAU document, rien n'est écrasé dans le compte
+    // (même si cet appareil travaillait déjà sur ce document : l'autre version reste intacte).
+    if (!prendreCompte) ecrireSynchro({ sale: true });
   }
   if (prendreCompte) {
     chargerDocument(r.corps);
@@ -913,7 +928,7 @@ async function synchroniser() {
   } else if (!estVide(etat) && (localModifie || !donnees)) {
     await envoyer();
   } else {
-    if (donnees && !s.doc) ecrireSynchro({ ...s, doc: r.corps.doc });
+    if (donnees && !s.doc) ecrireSynchro({ ...s, doc: r.corps.doc, vu: date, version });
     afficherCompte(donnees ? "Ton CV est enregistré dans ton compte." : "Ton CV sera enregistré dans ton compte dès que tu le rempliras.");
   }
 }

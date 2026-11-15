@@ -138,8 +138,25 @@ async function envoyerLocal() {
   if (!local || !local.cv || !texte(local.cv.nom)) return;
   const r = await api("GET", "/donnees");
   if (!r.ok || r.corps.donnees) return;
-  const e = await api("PUT", "/donnees", { donnees: local });
-  if (e.ok) { try { localStorage.setItem(CLE_SYNCHRO, JSON.stringify({ doc: e.corps.doc, vu: e.corps.modifie_le, sale: false })); } catch { /* idem */ } }
+  const e = await api("PUT", "/donnees", { donnees: local, nouveau: true });
+  if (e.ok) {
+    try {
+      localStorage.setItem(CLE_SYNCHRO, JSON.stringify({ doc: e.corps.doc, vu: e.corps.modifie_le, version: e.corps.version, sale: false }));
+    } catch { /* idem */ }
+  }
+}
+
+/** Enregistre ce qui est sur cet appareil sans jamais écraser une version plus récente :
+ *  si le document a changé ailleurs entre-temps (409), on en fait un nouveau document. */
+async function enregistrerSansEcraser(local, s) {
+  const corps = { donnees: local, nouveau: !s.doc };
+  if (s.doc && Number.isInteger(s.version)) corps.version = s.version;
+  const r = await api("PUT", "/donnees" + (s.doc ? "?doc=" + s.doc : ""), corps);
+  if (r.statut === 404 || (r.statut === 409 && r.corps.conflit)) {
+    return api("PUT", "/donnees", { donnees: local, nouveau: true,
+      nom: (window.tr || (t => t))("Version modifiée sur cet appareil") });
+  }
+  return r;
 }
 
 // ---------- Espace du visiteur connecté ----------
@@ -352,7 +369,7 @@ $("#espace-deconnexion").addEventListener("click", async () => {
   try {
     const s = JSON.parse(localStorage.getItem(CLE_SYNCHRO)) || {};
     const local = JSON.parse(localStorage.getItem(CLE_STOCKAGE));
-    if (s.sale && local) await api("PUT", "/donnees" + (s.doc ? "?doc=" + s.doc : ""), { donnees: local, nouveau: !s.doc });
+    if (s.sale && local) await enregistrerSansEcraser(local, s);
   } catch { /* rien à envoyer */ }
   await api("POST", "/deconnexion", {});
   // Ordinateur partagé : après la déconnexion, il ne reste rien sur cet appareil.

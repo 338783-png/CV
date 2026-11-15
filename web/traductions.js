@@ -20,6 +20,11 @@
   document.documentElement.lang = LANGUE;
 
   const DICO = { en: {
+    "Version modifiée sur cet appareil": "Version edited on this device",
+    "Ce CV avait été modifié sur un autre appareil entre-temps. Pour ne rien perdre, tes modifications ont été enregistrées dans un nouveau document (« Version modifiée sur cet appareil »). Retrouve les deux versions dans « Mon espace ».": "This CV had been edited on another device in the meantime. So that nothing is lost, your changes have been saved in a new document (“Version edited on this device”). Find both versions in “My space”.",
+    "Beaucoup de demandes en ce moment. Réessaie dans quelques secondes.": "Lots of requests right now. Try again in a few seconds.",
+    "Ton CV contient trop de texte : raccourcis-le avant de réessayer.": "Your CV contains too much text: shorten it and try again.",
+    "Ta lettre est trop longue : raccourcis-la avant de réessayer.": "Your letter is too long: shorten it and try again.",
     ").": ").", "Mot de passe oublié ?": "Forgot your password?", "Mot de passe oublié": "Forgotten password",
     "Nouveau mot de passe": "New password",
     "Indique l'adresse e-mail de ton compte : nous t'envoyons un lien pour choisir un nouveau mot de passe.": "Enter the e-mail address of your account: we will send you a link to choose a new password.",
@@ -304,6 +309,11 @@
     "Aucun texte de lettre n'a été trouvé dans ce fichier.": "No letter text was found in this file.",
     "Le contenu de ce fichier n'a pas pu être reconnu comme un CV. Remplis le formulaire à la main : cela prend quelques minutes.": "The content of this file could not be recognised as a CV. Fill in the form by hand: it takes a few minutes."
   }, it: {
+    "Version modifiée sur cet appareil": "Versione modificata su questo dispositivo",
+    "Ce CV avait été modifié sur un autre appareil entre-temps. Pour ne rien perdre, tes modifications ont été enregistrées dans un nouveau document (« Version modifiée sur cet appareil »). Retrouve les deux versions dans « Mon espace ».": "Nel frattempo questo CV era stato modificato su un altro dispositivo. Per non perdere nulla, le tue modifiche sono state salvate in un nuovo documento («Versione modificata su questo dispositivo»). Ritrovi le due versioni in «Il mio spazio».",
+    "Beaucoup de demandes en ce moment. Réessaie dans quelques secondes.": "Molte richieste in questo momento. Riprova tra qualche secondo.",
+    "Ton CV contient trop de texte : raccourcis-le avant de réessayer.": "Il tuo CV contiene troppo testo: accorcialo e riprova.",
+    "Ta lettre est trop longue : raccourcis-la avant de réessayer.": "La tua lettera è troppo lunga: accorciala e riprova.",
     ").": ").", "Mot de passe oublié ?": "Password dimenticata?", "Mot de passe oublié": "Password dimenticata",
     "Nouveau mot de passe": "Nuova password",
     "Indique l'adresse e-mail de ton compte : nous t'envoyons un lien pour choisir un nouveau mot de passe.": "Indica l'indirizzo e-mail del tuo account: ti inviamo un link per scegliere una nuova password.",
@@ -589,6 +599,8 @@
     "Le contenu de ce fichier n'a pas pu être reconnu comme un CV. Remplis le formulaire à la main : cela prend quelques minutes.": "Il contenuto di questo file non è stato riconosciuto come un CV. Compila il modulo a mano: bastano pochi minuti."
   } }[LANGUE] || {};
   const MOTIFS = { en: [
+    [/^Ton CV fait (\d+) pages : raccourcis-le \((\d+) au maximum, 1 ou 2 conseillées\)\.$/, "Your CV is $1 pages long: shorten it ($2 at most, 1 or 2 recommended)."],
+    [/^Ta lettre fait (\d+) pages : raccourcis-la \((\d+) au maximum, une seule conseillée\)\.$/, "Your letter is $1 pages long: shorten it ($2 at most, one recommended)."],
     [/^(\d+) mots · remplace les passages entre \[crochets\] par ton texte\.$/, "$1 words · replace the passages in [brackets] with your own text."],
     [/^(\d+) mots · il reste (\d+) parties? à écrire\.$/, "$1 words · $2 part(s) left to write."],
     [/^(\d+) mots · c'est un peu court : ajoute un exemple concret de ce que tu as réalisé\.$/, "$1 words · it is a little short: add a concrete example of what you have achieved."],
@@ -610,6 +622,8 @@
     [/^(Expérience|Formation|Compétence|Langue|Lien|Référence) (\d+)$/, "$t1 $2"],
     [/^\+ Ajouter : (.+)$/, "+ Add: $t1"]
   ], it: [
+    [/^Ton CV fait (\d+) pages : raccourcis-le \((\d+) au maximum, 1 ou 2 conseillées\)\.$/, "Il tuo CV è lungo $1 pagine: accorcialo ($2 al massimo, 1 o 2 consigliate)."],
+    [/^Ta lettre fait (\d+) pages : raccourcis-la \((\d+) au maximum, une seule conseillée\)\.$/, "La tua lettera è lunga $1 pagine: accorciala ($2 al massimo, una sola consigliata)."],
     [/^(\d+) mots · remplace les passages entre \[crochets\] par ton texte\.$/, "$1 parole · sostituisci i passaggi tra [parentesi] con il tuo testo."],
     [/^(\d+) mots · il reste (\d+) parties? à écrire\.$/, "$1 parole · restano $2 parti da scrivere."],
     [/^(\d+) mots · c'est un peu court : ajoute un exemple concret de ce que tu as réalisé\.$/, "$1 parole · è un po' corta: aggiungi un esempio concreto di ciò che hai realizzato."],

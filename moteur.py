@@ -12,6 +12,7 @@ Chaque donnée passe donc par trois filtres, dans cet ordre :
   3. compilation en bac à sable (pas de shell, durée limitée)   -> compiler
 """
 import base64
+import logging
 import os
 import re
 import shutil
@@ -27,9 +28,30 @@ RACINE = Path(__file__).parent
 TEMPLATES = RACINE / "templates"
 
 TIMEOUT_S = 20
-# Au plus 2 compilations LaTeX en même temps : évite qu'une rafale de
-# requêtes ne sature la machine.
+# Au plus 2 compilations LaTeX en même temps : évite qu'une rafale de requêtes ne sature
+# la machine. Une demande n'attend jamais indéfiniment sa place (ATTENTE_MAX_S), et au-delà
+# de EN_ATTENTE_MAX demandes qui attendent, les suivantes sont refusées tout de suite :
+# ainsi les fils du serveur ne restent jamais tous bloqués, et les pages répondent toujours.
 _COMPILATIONS = threading.Semaphore(2)
+ATTENTE_MAX_S = 15
+EN_ATTENTE_MAX = 6
+_en_attente = 0
+_verrou_attente = threading.Lock()
+
+# Ressources accordées à chaque programme externe (LaTeX, poppler) : mémoire, temps de
+# calcul, taille des fichiers écrits, fichiers ouverts. Un document piégé ne peut donc ni
+# épuiser la mémoire du serveur, ni remplir son disque.
+MEMOIRE_PROCESSUS_MO = int(os.environ.get("MEMOIRE_PROCESSUS_MO") or 1500)
+FICHIER_MAX_MO = 64
+
+# Taille maximale d'un document : texte total (après nettoyage) et nombre de pages.
+VOLUME_MAX = {"cv": 30_000, "lettre": 8_000}
+PAGES_MAX = {"cv": 4, "lettre": 2}
+
+_journal = logging.getLogger(__name__)
+_PRLIMIT = shutil.which("prlimit")
+if not _PRLIMIT:
+    _journal.warning("prlimit introuvable (paquet util-linux) : les programmes externes ne sont pas bridés.")
 
 MODELES_CV = {
     "moderne": "Moderne (bandeau de couleur, photo ronde)",
@@ -54,6 +76,19 @@ class ErreurDonnees(Exception):
 
 class ErreurCompilation(Exception):
     """LaTeX n'a pas réussi à produire le PDF (-> HTTP 422 ou 500)."""
+
+
+class ServeurOccupe(Exception):
+    """Trop de documents en cours de fabrication : réessayer dans quelques secondes (-> HTTP 503)."""
+
+
+def executer(commande, duree_max, **options):
+    """subprocess.run, avec des limites de ressources posées par prlimit (util-linux).
+    prlimit plutôt que preexec_fn : ce dernier n'est pas sûr dans un serveur à plusieurs fils."""
+    if _PRLIMIT:
+        commande = [_PRLIMIT, f"--as={MEMOIRE_PROCESSUS_MO * 1024 * 1024}", f"--cpu={int(duree_max) + 5}",
+                    f"--fsize={FICHIER_MAX_MO * 1024 * 1024}", "--nofile=256", "--", *commande]
+    return subprocess.run(commande, timeout=duree_max, **options)
 
 
 # --------------------------------------------------------------------------
@@ -560,8 +595,7 @@ def lualatex_disponible():
             dispo = False
             if POLICES and shutil.which("lualatex") and shutil.which("kpsewhich"):
                 try:
-                    r = subprocess.run(["kpsewhich", "luaotfload.sty"], capture_output=True,
-                                       timeout=10, env=_ENV_TEX)
+                    r = executer(["kpsewhich", "luaotfload.sty"], 10, capture_output=True, env=_ENV_TEX)
                     dispo = r.returncode == 0
                 except (OSError, subprocess.TimeoutExpired):
                     pass
@@ -614,12 +648,10 @@ def _compiler_avec(moteur_tex, source_latex, fichiers, duree_max):
             "doc.tex",
         ]
         try:
-            with _COMPILATIONS:
+            with _place_de_compilation():
                 # _ENV_TEX : mode « paranoïaque », LaTeX ne lit/écrit que dans son dossier.
-                resultat = subprocess.run(
-                    commande, cwd=tmp, capture_output=True, text=True,
-                    errors="replace", timeout=duree_max, env=_ENV_TEX,
-                )
+                resultat = executer(commande, duree_max, cwd=tmp, capture_output=True, text=True,
+                                    errors="replace", env=_ENV_TEX)
         except subprocess.TimeoutExpired:
             raise ErreurCompilation(f"Compilation interrompue après {duree_max} s.")
 
@@ -633,18 +665,71 @@ def _compiler_avec(moteur_tex, source_latex, fichiers, duree_max):
         if resultat.returncode != 0:
             raise ErreurCompilation(f"Erreur LaTeX ({moteur_tex}) :\n{_resume_erreur(resultat.stdout)}")
 
-        return (tmp / "doc.pdf").read_bytes()
+        # LaTeX annonce lui-même le nombre de pages : « Output written on doc.pdf (3 pages, … ».
+        m = re.search(r"Output written on \S*doc\.pdf \((\d+) pages?", resultat.stdout)
+        return (tmp / "doc.pdf").read_bytes(), int(m.group(1)) if m else 0
 
 
-def compiler(source_latex, fichiers=None):
-    """Compile le LaTeX et renvoie le PDF (bytes). pdflatex d'abord, lualatex si nécessaire."""
+class _place_de_compilation:
+    """Une des 2 places de compilation, attendue ATTENTE_MAX_S au plus (sinon ServeurOccupe)."""
+
+    def __enter__(self):
+        global _en_attente
+        with _verrou_attente:
+            if _en_attente >= EN_ATTENTE_MAX:
+                raise ServeurOccupe()
+            _en_attente += 1
+        try:
+            obtenue = _COMPILATIONS.acquire(timeout=ATTENTE_MAX_S)
+        finally:
+            with _verrou_attente:
+                _en_attente -= 1
+        if not obtenue:
+            raise ServeurOccupe()
+        return self
+
+    def __exit__(self, *erreur):
+        _COMPILATIONS.release()
+        return False
+
+
+def compiler(source_latex, fichiers=None, genre="cv"):
+    """Compile le LaTeX et renvoie le PDF (bytes). pdflatex d'abord, lualatex si nécessaire.
+    Refuse (ErreurDonnees) un document de plus de PAGES_MAX[genre] pages."""
     try:
-        return _compiler_avec("pdflatex", source_latex, fichiers, TIMEOUT_S)
+        pdf, pages = _compiler_avec("pdflatex", source_latex, fichiers, TIMEOUT_S)
     except CaractereInconnu:
         if not lualatex_disponible():
             raise
-    # La toute première compilation lualatex prépare les polices : on lui laisse du temps.
-    return _compiler_avec("lualatex", source_latex, fichiers, 3 * TIMEOUT_S)
+        # La toute première compilation lualatex prépare les polices : on lui laisse du temps.
+        pdf, pages = _compiler_avec("lualatex", source_latex, fichiers, 3 * TIMEOUT_S)
+    if pages > PAGES_MAX[genre]:
+        if genre == "lettre":
+            raise ErreurDonnees(f"Ta lettre fait {pages} pages : raccourcis-la "
+                                f"({PAGES_MAX['lettre']} au maximum, une seule conseillée).")
+        raise ErreurDonnees(f"Ton CV fait {pages} pages : raccourcis-le "
+                            f"({PAGES_MAX['cv']} au maximum, 1 ou 2 conseillées).")
+    return pdf
+
+
+def _volume(valeur):
+    """Nombre total de caractères de texte dans une structure (dict / list / str)."""
+    if isinstance(valeur, str):
+        return len(valeur)
+    if isinstance(valeur, dict):
+        valeur = valeur.values()
+    if isinstance(valeur, (list, tuple, type({}.values()))):
+        return sum(_volume(v) for v in valeur)
+    return 0
+
+
+def _verifier_volume(contenu, genre):
+    """Refuse un document dont le texte total dépasse VOLUME_MAX[genre] caractères.
+    contenu : les données DÉJÀ nettoyées (sans la photo, qui est un fichier à part)."""
+    if _volume(contenu) > VOLUME_MAX[genre]:
+        if genre == "lettre":
+            raise ErreurDonnees("Ta lettre est trop longue : raccourcis-la avant de réessayer.")
+        raise ErreurDonnees("Ton CV contient trop de texte : raccourcis-le avant de réessayer.")
 
 
 # --------------------------------------------------------------------------
@@ -652,13 +737,15 @@ def compiler(source_latex, fichiers=None):
 # --------------------------------------------------------------------------
 def generer_cv(donnees, options=None):
     contexte, fichiers = preparer_cv(donnees, options)
+    _verifier_volume({cle: v for cle, v in contexte["cv"].items() if cle != "photo"}, "cv")
     latex = rendre_latex(f"cv_{contexte['o']['modele']}.tex.j2", contexte)
-    return compiler(latex, fichiers)
+    return compiler(latex, fichiers, "cv")
 
 
 def generer_lettre(donnees, lettre, options=None):
     contexte, fichiers = preparer_lettre(donnees, lettre, options)
-    return compiler(rendre_latex(f"lettre_{contexte['o']['modele_lettre']}.tex.j2", contexte), fichiers)
+    _verifier_volume(contexte["l"], "lettre")
+    return compiler(rendre_latex(f"lettre_{contexte['o']['modele_lettre']}.tex.j2", contexte), fichiers, "lettre")
 
 
 def pdf_vers_images(pdf, pages_max=3, resolution=96):
@@ -671,11 +758,8 @@ def pdf_vers_images(pdf, pages_max=3, resolution=96):
         tmp = Path(tmp)
         (tmp / "doc.pdf").write_bytes(pdf)
         try:
-            subprocess.run(
-                ["pdftoppm", "-jpeg", "-r", str(resolution), "-f", "1", "-l", str(pages_max),
-                 "doc.pdf", "page"],
-                cwd=tmp, check=True, capture_output=True, timeout=TIMEOUT_S,
-            )
+            executer(["pdftoppm", "-jpeg", "-r", str(resolution), "-f", "1", "-l", str(pages_max),
+                      "doc.pdf", "page"], TIMEOUT_S, cwd=tmp, check=True, capture_output=True)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
             raise ErreurCompilation("La conversion du PDF en image a échoué.")
         return [f.read_bytes() for f in sorted(tmp.glob("page*.jpg"))]

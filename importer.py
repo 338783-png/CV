@@ -18,7 +18,7 @@ import unicodedata
 import zipfile
 from pathlib import Path
 
-from moteur import ErreurCompilation, ErreurDonnees
+from moteur import ErreurCompilation, ErreurDonnees, executer
 
 TEXTE_MAX = 60_000            # caractères gardés après extraction
 DOCX_MAX = 8_000_000          # taille maximale du document.xml décompressé
@@ -55,8 +55,8 @@ def _texte_pdf(octets, mise_en_page=False):
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / "doc.pdf").write_bytes(octets)
         try:
-            r = subprocess.run(["pdftotext", "-enc", "UTF-8", "-l", "6", *(["-layout"] if mise_en_page else []),
-                                "doc.pdf", "-"], cwd=tmp, capture_output=True, timeout=15)
+            r = executer(["pdftotext", "-enc", "UTF-8", "-l", "6", *(["-layout"] if mise_en_page else []),
+                          "doc.pdf", "-"], 15, cwd=tmp, capture_output=True)
         except subprocess.TimeoutExpired:
             raise ErreurDonnees("Ce PDF est trop long à lire. Essaie avec un fichier plus simple.")
         if r.returncode != 0:
