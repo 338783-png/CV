@@ -29,8 +29,10 @@ RUN useradd --create-home site
 # Avec DERRIERE_PROXY=1 (production), le serveur REFUSE DE DÉMARRER sans :
 #   ADRESSE_SITE   l'adresse publique en https (ex. https://cv.express) ;
 #   CLE_SECRETE    32 caractères aléatoires ou plus (signe les cookies de session) ;
-#   SMTP_HOTE et EMAIL_EXPEDITEUR (+ SMTP_PORT, SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE) :
-#                  envoi des e-mails d'inscription et de mot de passe oublié.
+#   EMAIL_EXPEDITEUR et BREVO_CLE_API (ou SMTP_HOTE + SMTP_PORT, SMTP_UTILISATEUR,
+#                  SMTP_MOT_DE_PASSE) : envoi des e-mails d'inscription et de mot de passe oublié.
+# Facultatif : DATABASE_URL (postgresql://…, ex. Neon) pour garder les comptes dans une base
+# en ligne au lieu de /donnees (indispensable chez un hébergeur sans disque, comme Render gratuit).
 # Voir le début de comptes.py.
 RUN mkdir /donnees && chown site /donnees
 ENV DOSSIER_DONNEES=/donnees
@@ -40,4 +42,5 @@ USER site
 ENV PORT=8000
 EXPOSE 8000
 # Un seul processus, plusieurs fils : la limite de débit est comptée en mémoire.
-CMD ["sh", "-c", "gunicorn -w 1 --threads 16 --timeout 90 -b 0.0.0.0:${PORT} app:app"]
+# DELAI_SERVEUR : durée maximale d'une requête (à monter sur une petite machine, voir render.yaml).
+CMD ["sh", "-c", "gunicorn -w 1 --threads 16 --timeout ${DELAI_SERVEUR:-90} -b 0.0.0.0:${PORT} app:app"]

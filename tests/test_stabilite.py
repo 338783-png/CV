@@ -248,6 +248,7 @@ def test_version_invalide_refusee(inscrire, version):
     assert c.get(f"{API}/donnees?doc={numero}").get_json()["donnees"]["cv"]["nom"] == "A"
 
 
+@pytest.mark.skipif(comptes.POSTGRES, reason="base SQLite seulement")
 def test_ancienne_base_sans_colonne_version_migree(tmp_path, monkeypatch):
     base = tmp_path / "comptes.sqlite3"
     b = sqlite3.connect(base)

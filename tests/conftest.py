@@ -15,8 +15,12 @@ import pytest
 
 # À faire AVANT d'importer l'application : elle lit ces réglages à l'import.
 os.environ["DOSSIER_DONNEES"] = tempfile.mkdtemp(prefix="cv-tests-")
-for variable in ("DERRIERE_PROXY", "ADRESSE_SITE", "SMTP_HOTE", "CLE_SECRETE"):
+for variable in ("DERRIERE_PROXY", "ADRESSE_SITE", "SMTP_HOTE", "BREVO_CLE_API", "CLE_SECRETE", "DATABASE_URL"):
     os.environ.pop(variable, None)
+# Pour lancer les mêmes tests sur PostgreSQL (base JETABLE : elle est vidée à chaque test) :
+#   CV_TESTS_POSTGRES=postgresql://… .venv/bin/python -m pytest tests
+if os.environ.get("CV_TESTS_POSTGRES"):
+    os.environ["DATABASE_URL"] = os.environ["CV_TESTS_POSTGRES"]
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import app as application  # noqa: E402

@@ -1,16 +1,18 @@
-# Déploiement sur Render (https://render.com) : New > Blueprint > choisir ce dépôt.
+# Déploiement GRATUIT sur Render (https://render.com) : New > Blueprint > choisir ce dépôt.
 # Les valeurs marquées sync: false sont demandées par Render lors de la création.
+#
+# L'offre gratuite n'a pas de disque : les comptes vont dans une base PostgreSQL en ligne
+# (Neon, gratuite), et les e-mails partent par l'API de Brevo (le SMTP y est bloqué).
+# Le site s'endort après 15 minutes sans visite (premier chargement lent ensuite).
+# Pour passer à l'offre payante plus tard : plan: starter (plus rapide, jamais endormi),
+# et retirer les quatre réglages « petite machine » plus bas.
 services:
   - type: web
     name: cv-express
     runtime: docker
-    plan: starter            # le plan gratuit n'a ni disque (comptes perdus) ni envoi d'e-mails
-    region: frankfurt
+    plan: free
+    region: frankfurt        # choisir la même région pour la base Neon (AWS Europe Central / Frankfurt)
     healthCheckPath: /
-    disk:
-      name: donnees
-      mountPath: /donnees    # base des comptes et sauvegardes
-      sizeGB: 1
     envVars:
       - key: DERRIERE_PROXY
         value: "1"
@@ -18,13 +20,18 @@ services:
         generateValue: true  # chaîne aléatoire créée une fois par Render
       - key: ADRESSE_SITE    # ex. https://cv-express.onrender.com, ou ton propre domaine
         sync: false
-      - key: SMTP_HOTE       # ex. smtp-relay.brevo.com
+      - key: DATABASE_URL    # chaîne de connexion Neon : postgresql://…?sslmode=require
         sync: false
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_UTILISATEUR
+      - key: BREVO_CLE_API   # Brevo > SMTP & API > API Keys
         sync: false
-      - key: SMTP_MOT_DE_PASSE
+      - key: EMAIL_EXPEDITEUR  # adresse validée dans Brevo, ex. CV.express <ton.adresse@gmail.com>
         sync: false
-      - key: EMAIL_EXPEDITEUR  # ex. CV.express <bonjour@ton-domaine>
-        sync: false
+      # Petite machine (0,1 processeur, 512 Mo) : une compilation à la fois, plus de temps.
+      - key: COMPILATIONS_SIMULTANEES
+        value: "1"
+      - key: DUREE_COMPILATION_MAX
+        value: "45"
+      - key: DELAI_SERVEUR
+        value: "180"
+      - key: MEMOIRE_PROCESSUS_MO
+        value: "400"

@@ -270,6 +270,7 @@ def test_la_production_demarre_avec_tous_ses_reglages(monkeypatch):
 # ---------------------------------------------------------------------------
 # Clé secrète et base de données
 # ---------------------------------------------------------------------------
+@pytest.mark.skipif(comptes.POSTGRES, reason="base SQLite seulement")
 def test_base_et_cle_lisibles_par_le_serveur_seulement():
     dossier = comptes.DOSSIER
     assert stat.S_IMODE(os.stat(dossier).st_mode) == 0o700

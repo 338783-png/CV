@@ -21,9 +21,12 @@ sont écrits dans le terminal au lieu d'être envoyés.
 ## Production
 
 Voir le `Dockerfile`. Avec `DERRIERE_PROXY=1`, le serveur refuse de démarrer sans
-`ADRESSE_SITE` (en https), `CLE_SECRETE` et les réglages SMTP.
+`ADRESSE_SITE` (en https), `CLE_SECRETE`, `EMAIL_EXPEDITEUR` et un moyen d'envoyer les
+e-mails : `BREVO_CLE_API` (API web de Brevo) ou les réglages `SMTP_…`.
 
-La base des comptes vit dans `/donnees` : monter un volume à cet endroit.
+La base des comptes est :
+- une base PostgreSQL en ligne si `DATABASE_URL` est défini (par exemple Neon) ;
+- sinon un fichier SQLite dans `/donnees` : monter alors un volume à cet endroit.
 
 ## Sauvegardes de la base
 
@@ -47,15 +50,63 @@ Restaurer une sauvegarde :
 3. vérifier que le fichier appartient à l'utilisateur du serveur, avec les droits 600 ;
 4. relancer le serveur.
 
-## Déployer sur Render
+## Déployer gratuitement : Render + Neon + Brevo
 
-1. Pousser le dépôt sur GitHub (`git push`).
-2. Sur render.com : **New > Blueprint**, choisir le dépôt. Render lit `render.yaml`
-   (service Docker, disque de 1 Go monté sur `/donnees`, `CLE_SECRETE` générée).
-3. Remplir les valeurs demandées : `ADRESSE_SITE` (par exemple
-   `https://cv-express.onrender.com`) et les réglages SMTP du service d'e-mails.
-4. Propre domaine : l'ajouter dans **Settings > Custom Domains**, puis mettre
-   `ADRESSE_SITE` à `https://ce-domaine`.
+Trois comptes gratuits, chacun son rôle : **Render** fait tourner le site, **Neon** garde la
+base des comptes, **Brevo** envoie les e-mails (inscription, mot de passe oublié).
 
-Le plan gratuit ne convient pas : pas de disque (les comptes disparaissent à chaque
-redémarrage) et l'envoi d'e-mails par SMTP y est bloqué.
+1. **Neon** (neon.com) : créer un projet, région **AWS Europe Central (Frankfurt)**.
+   Dans **Connect**, copier la chaîne de connexion (`postgresql://…?sslmode=require`).
+   Les tables sont créées automatiquement au premier démarrage du site.
+2. **Brevo** (brevo.com) :
+   - **Senders, Domains & Dedicated IPs > Senders** : ajouter et valider l'adresse qui
+     enverra les e-mails (un lien de confirmation arrive dans cette boîte) ;
+   - **SMTP & API > API Keys** : créer une clé et la copier.
+3. Pousser le dépôt sur GitHub (`git push`).
+4. **Render** (render.com) : **New > Blueprint**, choisir le dépôt. Render lit `render.yaml`
+   et demande :
+   - `ADRESSE_SITE` : `https://cv-express.onrender.com` (le nom exact est affiché par
+     Render ; s'il diffère, corriger cette valeur dans **Environment** ensuite) ;
+   - `DATABASE_URL` : la chaîne de connexion Neon ;
+   - `BREVO_CLE_API` : la clé Brevo ;
+   - `EMAIL_EXPEDITEUR` : l'adresse validée dans Brevo, par exemple
+     `CV.express <ton.adresse@gmail.com>`.
+5. Vérifier : créer un compte sur le site ; l'e-mail d'inscription doit arriver (regarder
+   aussi les indésirables). En cas de problème, **Logs** dans Render.
+
+Limites de l'offre gratuite : le site s'endort après 15 minutes sans visite (le premier
+visiteur attend alors environ une minute), un PDF prend quelques secondes de plus, Neon
+garde 1 Go (quelques milliers de comptes) et Brevo envoie 300 e-mails par jour.
+Plus tard, avec un budget : `plan: starter` dans `render.yaml` (site jamais endormi,
+plus rapide), sans rien changer d'autre.
+
+Propre domaine : l'ajouter dans **Settings > Custom Domains** sur Render, puis mettre
+`ADRESSE_SITE` à `https://ce-domaine`.
+
+### Sauvegarder la base en ligne
+
+Neon gratuit ne garde pas de vraies sauvegardes. Depuis ton ordinateur, régulièrement
+(par exemple chaque semaine) :
+
+```bash
+DATABASE_URL='postgresql://…' .venv/bin/python -m comptes sauvegarder
+```
+
+La base entière est copiée dans un fichier `donnees/sauvegardes/comptes-DATE.sqlite3`
+(il contient les adresses e-mail des clients : ne pas le partager). Pour la remettre en
+ligne dans une base Neon **vide** (nouvelle base, ou après un accident) :
+
+```bash
+DATABASE_URL='postgresql://…' .venv/bin/python -m comptes restaurer donnees/sauvegardes/comptes-DATE.sqlite3
+```
+
+La même commande transfère les comptes d'une ancienne base SQLite vers Neon.
+
+### Tests sur PostgreSQL
+
+Les tests tournent aussi sur une base PostgreSQL **jetable** (elle est vidée à chaque test,
+ne jamais y mettre l'adresse de la vraie base) :
+
+```bash
+CV_TESTS_POSTGRES='postgresql://…/base_de_test' .venv/bin/python -m pytest tests -q
+```

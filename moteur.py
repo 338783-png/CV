@@ -27,12 +27,15 @@ import jinja2
 RACINE = Path(__file__).parent
 TEMPLATES = RACINE / "templates"
 
-TIMEOUT_S = 20
-# Au plus 2 compilations LaTeX en même temps : évite qu'une rafale de requêtes ne sature
+# Durée maximale d'une compilation. Sur une petite machine (offre gratuite de Render : 0,1
+# processeur), la monter avec DUREE_COMPILATION_MAX=60.
+TIMEOUT_S = int(os.environ.get("DUREE_COMPILATION_MAX") or 20)
+# Au plus 2 compilations LaTeX en même temps (COMPILATIONS_SIMULTANEES ; 1 sur une machine à
+# 512 Mo de mémoire) : évite qu'une rafale de requêtes ne sature
 # la machine. Une demande n'attend jamais indéfiniment sa place (ATTENTE_MAX_S), et au-delà
 # de EN_ATTENTE_MAX demandes qui attendent, les suivantes sont refusées tout de suite :
 # ainsi les fils du serveur ne restent jamais tous bloqués, et les pages répondent toujours.
-_COMPILATIONS = threading.Semaphore(2)
+_COMPILATIONS = threading.Semaphore(int(os.environ.get("COMPILATIONS_SIMULTANEES") or 2))
 ATTENTE_MAX_S = 15
 EN_ATTENTE_MAX = 6
 _en_attente = 0
