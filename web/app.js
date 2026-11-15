@@ -815,6 +815,7 @@ function afficherCompte(message) {
   $("#compte-bascule").textContent = modeInscription ? "Se connecter" : "Créer un compte";
   $("#compte-aide-mdp").hidden = !modeInscription;
   $("#compte-info-inscription").hidden = !modeInscription;
+  $("#compte-oubli-ligne").hidden = modeInscription;
   $("#compte-mdp").autocomplete = modeInscription ? "new-password" : "current-password";
 }
 

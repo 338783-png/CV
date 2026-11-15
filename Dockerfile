@@ -25,6 +25,8 @@ RUN useradd --create-home site
 # Comptes utilisateurs : la base de données vit dans /donnees. Monter un volume à cet
 # endroit (docker run -v cv-donnees:/donnees …), sinon les comptes disparaissent à chaque
 # mise à jour du site. CLE_SECRETE (32 caractères ou plus) signe les cookies de session.
+# Mot de passe oublié : SMTP_HOTE, SMTP_PORT, SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE, EMAIL_EXPEDITEUR
+# et ADRESSE_SITE (ex. https://cv.express) ; voir le début de comptes.py.
 RUN mkdir /donnees && chown site /donnees
 ENV DOSSIER_DONNEES=/donnees
 VOLUME /donnees

@@ -228,9 +228,10 @@
     <label>Adresse e-mail<input type="email" id="compte-email" maxlength="120" autocomplete="username" required></label>
     <label>Mot de passe <small id="compte-aide-mdp" hidden>8 caractères au minimum</small>
       <input type="password" id="compte-mdp" minlength="8" maxlength="200" autocomplete="current-password" required></label>
-    <p class="conseil" id="compte-info-inscription" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>). Note bien ton mot de passe : il ne peut pas être récupéré pour l'instant.</p>
+    <p class="conseil" id="compte-info-inscription" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>).</p>
     <p id="compte-erreur" class="erreur-compte" role="alert" hidden></p>
     <button type="submit" class="bouton principal" id="compte-valider">Se connecter</button>
+    <p class="bascule" id="compte-oubli-ligne"><a class="lien" href="/compte?oubli=1">Mot de passe oublié ?</a></p>
     <p class="bascule"><span id="compte-question">Pas encore de compte ?</span>
       <button type="button" class="lien" id="compte-bascule">Créer un compte</button></p>
   </form>

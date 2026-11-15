@@ -13,11 +13,32 @@
     <label>Adresse e-mail<input type="email" id="porte-email" maxlength="120" autocomplete="username" required></label>
     <label>Mot de passe <small id="porte-aide" hidden>8 caractères au minimum</small>
       <input type="password" id="porte-mdp" minlength="8" maxlength="200" autocomplete="current-password" required></label>
-    <p class="note" id="porte-info" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="{{ p }}/confidentialite">politique de confidentialité</a>). Note bien ton mot de passe : il ne peut pas être récupéré pour l'instant.</p>
+    <p class="note" id="porte-info" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="{{ p }}/confidentialite">politique de confidentialité</a>).</p>
     <p id="porte-erreur" class="erreur-compte" role="alert" hidden></p>
     <button type="submit" class="bouton principal" id="porte-valider">Se connecter</button>
+    <p class="bascule" id="porte-oubli-ligne"><button type="button" class="lien" id="porte-oubli">Mot de passe oublié ?</button></p>
     <p class="bascule"><span id="porte-question">Pas encore de compte ?</span>
       <button type="button" class="lien" id="porte-bascule">Créer un compte</button></p>
+  </form>
+
+  <!-- Mot de passe oublié, étape 1 : demander le lien -->
+  <form id="oubli-form" class="carte-espace" novalidate hidden>
+    <p>Indique l'adresse e-mail de ton compte : nous t'envoyons un lien pour choisir un nouveau mot de passe.</p>
+    <label>Adresse e-mail<input type="email" id="oubli-email" maxlength="120" autocomplete="username" required></label>
+    <p id="oubli-erreur" class="erreur-compte" role="alert" hidden></p>
+    <p id="oubli-envoye" class="espace-message" role="status" hidden>Si un compte existe avec cette adresse, un e-mail vient de lui être envoyé. Le lien est valable 30 minutes. Pense à regarder dans les courriers indésirables.</p>
+    <button type="submit" class="bouton principal" id="oubli-valider">Recevoir le lien</button>
+    <p class="bascule"><button type="button" class="lien" id="oubli-retour">Revenir à la connexion</button></p>
+  </form>
+
+  <!-- Mot de passe oublié, étape 2 : arrivée par le lien reçu -->
+  <form id="jeton-form" class="carte-espace" novalidate hidden>
+    <p>Choisis ton nouveau mot de passe. Tes autres appareils seront déconnectés.</p>
+    <label>Nouveau mot de passe <small>8 caractères au minimum</small>
+      <input type="password" id="jeton-mdp" minlength="8" maxlength="200" autocomplete="new-password" required></label>
+    <p id="jeton-erreur" class="erreur-compte" role="alert" hidden></p>
+    <button type="submit" class="bouton principal" id="jeton-valider">Enregistrer mon mot de passe</button>
+    <p class="bascule"><button type="button" class="lien" id="jeton-retour">Demander un nouveau lien</button></p>
   </form>
 </section>
 

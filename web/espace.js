@@ -10,6 +10,12 @@ const MODELES = { moderne: "Moderne", classique: "Classique", europeen: "Europé
 const PARTIES = ["accroche", "parcours", "entreprise", "conclusion"];
 let documents = [];         // les documents du compte : { doc, nom, modifie_le, donnees (sans la photo) }
 let inscription = false;
+let vue = "connexion";      // ce que montre la porte d'entrée : "connexion", "oubli" (demander un lien) ou "jeton" (lien reçu)
+// Arrivée par le lien reçu par e-mail : /compte?jeton=… Le jeton est aussitôt retiré de la barre
+// d'adresse (il ne reste ni dans l'historique, ni dans une capture d'écran).
+let jetonRecu = new URLSearchParams(location.search).get("jeton");
+if (jetonRecu) { vue = "jeton"; history.replaceState(null, "", location.pathname); }
+else if (new URLSearchParams(location.search).get("oubli")) vue = "oubli";
 
 async function api(methode, chemin, corps) {
   try {
@@ -37,6 +43,14 @@ const liste = v => (Array.isArray(v) ? v.filter(x => x && typeof x === "object")
 
 // ---------- Porte d'entrée : connexion / création de compte ----------
 function afficherPorte() {
+  $("#porte-form").hidden = vue !== "connexion";
+  $("#oubli-form").hidden = vue !== "oubli";
+  $("#jeton-form").hidden = vue !== "jeton";
+  $("#porte-oubli-ligne").hidden = inscription;
+  if (vue !== "connexion") {
+    $("#porte-titre").textContent = vue === "oubli" ? "Mot de passe oublié" : "Nouveau mot de passe";
+    return;
+  }
   $("#porte-titre").textContent = inscription ? "Créer un compte" : "Se connecter";
   $("#porte-valider").textContent = inscription ? "Créer mon compte" : "Se connecter";
   $("#porte-question").textContent = inscription ? "Déjà un compte ?" : "Pas encore de compte ?";
@@ -46,6 +60,46 @@ function afficherPorte() {
   $("#porte-mdp").autocomplete = inscription ? "new-password" : "current-password";
 }
 $("#porte-bascule").addEventListener("click", () => { inscription = !inscription; erreur("#porte-erreur", ""); afficherPorte(); });
+// ---------- Mot de passe oublié ----------
+function montrer(nouvelleVue) {
+  vue = nouvelleVue;
+  for (const sel of ["#porte-erreur", "#oubli-erreur", "#jeton-erreur"]) erreur(sel, "");
+  $("#oubli-envoye").hidden = true;
+  $("#oubli-valider").hidden = false;
+  afficherPorte();
+}
+$("#porte-oubli").addEventListener("click", () => { $("#oubli-email").value = $("#porte-email").value; montrer("oubli"); });
+$("#oubli-retour").addEventListener("click", () => montrer("connexion"));
+$("#jeton-retour").addEventListener("click", () => montrer("oubli"));
+
+$("#oubli-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#oubli-email").value.trim();
+  if (!email) return erreur("#oubli-erreur", "Renseigne ton adresse e-mail.");
+  $("#oubli-valider").disabled = true;
+  const r = await api("POST", "/mot-de-passe-oublie", { email, langue: window.LANGUE_SITE || "fr" });
+  $("#oubli-valider").disabled = false;
+  if (!r.ok) return erreur("#oubli-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
+  erreur("#oubli-erreur", "");
+  $("#oubli-envoye").hidden = false;
+  $("#oubli-valider").hidden = true;
+});
+
+$("#jeton-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const mdp = $("#jeton-mdp").value;
+  if (mdp.length < 8) return erreur("#jeton-erreur", "Le mot de passe doit contenir au moins 8 caractères.");
+  $("#jeton-valider").disabled = true;
+  const r = await api("POST", "/nouveau-mot-de-passe", { jeton: jetonRecu, mot_de_passe: mdp });
+  $("#jeton-valider").disabled = false;
+  $("#jeton-mdp").value = "";
+  if (!r.ok) return erreur("#jeton-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
+  jetonRecu = null; vue = "connexion";
+  try { localStorage.removeItem(CLE_SYNCHRO); } catch { /* stockage indisponible */ }
+  await charger();
+  message("Ton mot de passe a été changé. Tes autres appareils ont été déconnectés.");
+});
+
 $("#porte-form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("#porte-email").value.trim(), mdp = $("#porte-mdp").value;

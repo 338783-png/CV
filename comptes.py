@@ -9,19 +9,24 @@ Règles de sécurité appliquées ici :
   - les échecs de connexion sont limités (par adresse IP et par adresse e-mail) ;
   - le cookie de session est signé, invisible pour JavaScript (HttpOnly) et n'est pas
     envoyé par les autres sites (SameSite) ;
-  - les requêtes qui modifient quelque chose doivent venir de notre propre site.
+  - les requêtes qui modifient quelque chose doivent venir de notre propre site ;
+  - mot de passe oublié : un lien à usage unique, valable 30 minutes, est envoyé par e-mail ;
+    seule son empreinte est gardée en base, et la réponse est la même que le compte existe ou non.
 
 Stockage : un fichier SQLite (dossier donnees/, à sauvegarder et à garder hors de Git).
 """
+import hashlib
 import json
 import os
 import re
 import secrets
+import smtplib
 import sqlite3
 import threading
 import time
 from collections import defaultdict, deque
 from datetime import timedelta
+from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -37,6 +42,19 @@ DONNEES_MAX = 2_500_000          # taille maximale d'un document enregistré (ph
 DOCUMENTS_MAX = 10               # nombre de documents (un CV et sa lettre) par compte
 NOM_MAX = 60
 SESSION_JOURS = 30
+LIEN_MINUTES = 30                # durée de validité d'un lien « mot de passe oublié »
+
+# Envoi des e-mails (mot de passe oublié). À définir chez l'hébergeur :
+#   SMTP_HOTE, SMTP_PORT (587 par défaut), SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE,
+#   EMAIL_EXPEDITEUR (adresse affichée comme expéditeur),
+#   ADRESSE_SITE (ex. https://cv.express) : l'adresse mise dans le lien envoyé.
+# Sans SMTP_HOTE (en développement), le lien est écrit dans le journal du serveur au lieu d'être envoyé.
+SMTP_HOTE = os.environ.get("SMTP_HOTE", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT") or 587)
+SMTP_UTILISATEUR = os.environ.get("SMTP_UTILISATEUR", "")
+SMTP_MOT_DE_PASSE = os.environ.get("SMTP_MOT_DE_PASSE", "")
+EMAIL_EXPEDITEUR = os.environ.get("EMAIL_EXPEDITEUR", "") or SMTP_UTILISATEUR
+ADRESSE_SITE = os.environ.get("ADRESSE_SITE", "").rstrip("/")
 _EMAIL_OK = re.compile(r"^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 
 comptes = Blueprint("comptes", __name__, url_prefix="/api/compte")
@@ -73,6 +91,11 @@ def initialiser(app):
             contenu    TEXT NOT NULL,
             modifie_le INTEGER NOT NULL)""")
         b.execute("CREATE INDEX IF NOT EXISTS documents_du_compte ON documents (compte_id, modifie_le)")
+        # Liens « mot de passe oublié » : on ne garde que l'empreinte du jeton, jamais le jeton.
+        b.execute("""CREATE TABLE IF NOT EXISTS reinitialisations (
+            compte_id INTEGER PRIMARY KEY REFERENCES comptes(id) ON DELETE CASCADE,
+            empreinte TEXT NOT NULL,
+            expire_le INTEGER NOT NULL)""")
         # Ancienne table (un seul CV par compte) : son contenu devient le premier document.
         if b.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'donnees'").fetchone():
             b.execute("""INSERT INTO documents (compte_id, nom, contenu, modifie_le)
@@ -109,7 +132,7 @@ def initialiser(app):
 # adresse, cybercafé ou école, il y a plusieurs personnes). Les réussites ne comptent pas.
 # Les créations de compte sont limitées de la même façon (10 par adresse IP).
 FENETRE_S = 15 * 60
-LIMITES = {"email": 8, "ip": 20, "inscription": 10}
+LIMITES = {"email": 8, "ip": 20, "inscription": 10, "oubli_email": 3, "oubli_ip": 6, "jeton_ip": 10}
 _echecs = defaultdict(deque)
 _verrou = threading.Lock()
 
@@ -292,6 +315,121 @@ def changer_mot_de_passe():
                   (generate_password_hash(nouveau), jeton, compte[0]))
     _ouvrir_session(compte[0], jeton)       # cet appareil-ci reste connecté
     return jsonify(connecte=True)
+
+
+# --------------------------------------------------------------------------
+# Mot de passe oublié
+# --------------------------------------------------------------------------
+_TEXTES_OUBLI = {
+    "fr": ("CV.express : choisis un nouveau mot de passe",
+           "Bonjour,\n\nTu as demandé à changer le mot de passe de ton compte CV.express.\n"
+           "Ouvre ce lien pour en choisir un nouveau (valable {minutes} minutes, utilisable une seule fois) :\n\n{lien}\n\n"
+           "Si tu n'es pas à l'origine de cette demande, ignore ce message : ton mot de passe ne change pas.\n\nCV.express\n"),
+    "en": ("CV.express: choose a new password",
+           "Hello,\n\nYou asked to change the password of your CV.express account.\n"
+           "Open this link to choose a new one (valid for {minutes} minutes, usable only once):\n\n{lien}\n\n"
+           "If you did not make this request, ignore this message: your password does not change.\n\nCV.express\n"),
+    "it": ("CV.express: scegli una nuova password",
+           "Ciao,\n\nHai chiesto di cambiare la password del tuo account CV.express.\n"
+           "Apri questo link per sceglierne una nuova (valido {minutes} minuti, utilizzabile una sola volta):\n\n{lien}\n\n"
+           "Se non hai fatto tu questa richiesta, ignora questo messaggio: la tua password non cambia.\n\nCV.express\n"),
+}
+
+
+def _empreinte_jeton(jeton):
+    return hashlib.sha256(jeton.encode("utf-8")).hexdigest()
+
+
+def _envoyer_lien(email, lien, langue, journal):
+    """Envoie l'e-mail (dans un fil à part : la réponse au visiteur ne dépend pas de sa durée)."""
+    sujet, corps = _TEXTES_OUBLI.get(langue, _TEXTES_OUBLI["fr"])
+    if not SMTP_HOTE:
+        journal.warning("SMTP non configuré : e-mail non envoyé. Lien de réinitialisation : %s", lien)
+        return
+    message = EmailMessage()
+    message["Subject"], message["From"], message["To"] = sujet, EMAIL_EXPEDITEUR, email
+    message.set_content(corps.format(lien=lien, minutes=LIEN_MINUTES))
+    try:
+        if SMTP_PORT == 465:
+            serveur = smtplib.SMTP_SSL(SMTP_HOTE, SMTP_PORT, timeout=20)
+        else:
+            serveur = smtplib.SMTP(SMTP_HOTE, SMTP_PORT, timeout=20)
+            serveur.starttls()                      # connexion chiffrée obligatoire
+        with serveur:
+            if SMTP_UTILISATEUR:
+                serveur.login(SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE)
+            serveur.send_message(message)
+    except (OSError, smtplib.SMTPException) as e:
+        journal.error("Envoi de l'e-mail de réinitialisation impossible : %s", type(e).__name__)
+
+
+@comptes.post("/mot-de-passe-oublie")
+def mot_de_passe_oublie():
+    """Envoie un lien de réinitialisation. La réponse est TOUJOURS la même, que l'adresse
+    ait un compte ou non : on ne révèle pas qui est inscrit."""
+    corps = _corps()
+    email = corps.get("email")
+    email = email.strip().lower()[:120] if isinstance(email, str) else ""
+    langue = corps.get("langue") if corps.get("langue") in _TEXTES_OUBLI else "fr"
+    cles = (("oubli_ip", request.remote_addr), ("oubli_email", email))
+    if _bloque(*cles):
+        return jsonify(erreur="Trop de demandes. Réessaie dans un quart d'heure."), 429
+    if not _EMAIL_OK.match(email):
+        return jsonify(erreur="Adresse e-mail invalide."), 400
+    _noter(*cles)
+    with _base() as b:
+        ligne = b.execute("SELECT id FROM comptes WHERE email = ?", (email,)).fetchone()
+        if ligne:
+            jeton = secrets.token_urlsafe(32)
+            # Un seul lien valable par compte : le nouveau remplace le précédent.
+            b.execute("""INSERT INTO reinitialisations (compte_id, empreinte, expire_le) VALUES (?, ?, ?)
+                         ON CONFLICT(compte_id) DO UPDATE SET empreinte = excluded.empreinte,
+                                                              expire_le = excluded.expire_le""",
+                      (ligne[0], _empreinte_jeton(jeton), int(time.time()) + LIEN_MINUTES * 60))
+            # L'adresse du site vient de la configuration (ADRESSE_SITE), pas de la requête :
+            # sinon un attaquant pourrait faire envoyer un lien pointant vers son propre site.
+            racine = ADRESSE_SITE or request.url_root.rstrip("/")
+            prefixe = {"en": "/en", "it": "/it"}.get(langue, "")
+            lien = f"{racine}{prefixe}/compte?jeton={jeton}"
+            threading.Thread(target=_envoyer_lien, args=(email, lien, langue, current_app.logger), daemon=True).start()
+    return jsonify(envoye=True)
+
+
+@comptes.post("/nouveau-mot-de-passe")
+def nouveau_mot_de_passe():
+    """Deuxième étape : le jeton reçu par e-mail + le nouveau mot de passe."""
+    corps = _corps()
+    jeton, nouveau = corps.get("jeton"), corps.get("mot_de_passe")
+    limite = ("jeton_ip", request.remote_addr)
+    if _bloque(limite):
+        return jsonify(erreur="Trop de tentatives. Réessaie dans un quart d'heure."), 429
+    invalide = jsonify(erreur="Ce lien n'est plus valable. Demande un nouveau lien."), 400
+    if not isinstance(jeton, str) or not 20 <= len(jeton) <= 200:
+        _noter(limite)
+        return invalide
+    with _base() as b:
+        ligne = b.execute("""SELECT c.id, c.email FROM reinitialisations r JOIN comptes c ON c.id = r.compte_id
+                             WHERE r.empreinte = ? AND r.expire_le >= ?""",
+                          (_empreinte_jeton(jeton), int(time.time()))).fetchone()
+    if not ligne:
+        _noter(limite)
+        return invalide
+    if not isinstance(nouveau, str) or not MDP_MIN <= len(nouveau) <= MDP_MAX:
+        return jsonify(erreur=f"Le mot de passe doit contenir au moins {MDP_MIN} caractères."), 400
+    if nouveau.lower() in (ligne[1], ligne[1].split("@")[0]):
+        return jsonify(erreur="Choisis un mot de passe différent de ton adresse e-mail."), 400
+    session_jeton = secrets.token_hex(16)        # toutes les sessions ouvertes cessent d'être valables
+    with _base() as b:
+        # Le lien ne sert qu'une fois : on le supprime dans la même opération que le changement.
+        utilises = b.execute("DELETE FROM reinitialisations WHERE compte_id = ? AND empreinte = ?",
+                             (ligne[0], _empreinte_jeton(jeton))).rowcount
+        if not utilises:
+            return invalide
+        b.execute("UPDATE comptes SET empreinte = ?, jeton = ?, vu_le = ? WHERE id = ?",
+                  (generate_password_hash(nouveau), session_jeton, int(time.time()), ligne[0]))
+    _oublier(("email", ligne[1]))                # les anciens échecs de connexion ne bloquent plus
+    _ouvrir_session(ligne[0], session_jeton)
+    return jsonify(connecte=True, email=ligne[1])
 
 
 @comptes.post("/deconnexion")
