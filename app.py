@@ -138,9 +138,11 @@ def page(nom, langue="fr"):
     if langue != "fr" and (moteur.RACINE / "pages" / langue / fichier).is_file():
         fichier = f"{langue}/{fichier}"
     chemin = "/" if nom == "accueil" else f"/{nom}"          # adresse de la page, sans préfixe de langue
-    racine = request.url_root.rstrip("/")
+    # Adresses publiques (canonical, hreflang, aperçus de partage) : celle du site en
+    # production (ADRESSE_SITE), jamais celle annoncée par la requête.
+    racine = comptes.racine_site()
     return render_template(
-        fichier, racine=request.url_root, url_page=request.base_url,
+        fichier, racine=racine + "/", url_page=racine + request.path,
         langue=langue, p=PREFIXES[langue], c=textes.COMMUN[langue], a=textes.ACCUEIL[langue],
         # La même page dans chaque langue : sélecteur de langue et balises hreflang.
         versions=[(code, textes.LANGUES_SITE[code], PREFIXES[code] + chemin, racine + PREFIXES[code] + chemin)
@@ -207,14 +209,14 @@ def page_texte(nom):
 
 @app.get("/robots.txt")
 def robots():
-    return Response(f"User-agent: *\nDisallow: /api/\nSitemap: {request.url_root}sitemap.xml\n",
+    return Response(f"User-agent: *\nDisallow: /api/\nSitemap: {comptes.racine_site()}/sitemap.xml\n",
                     mimetype="text/plain")
 
 
 @app.get("/sitemap.xml")
 def plan_du_site():
     """La liste des pages à faire connaître aux moteurs de recherche."""
-    racine = request.url_root.rstrip("/")
+    racine = comptes.racine_site()
     adresses = [racine + prefixe + chemin for prefixe in PREFIXES.values()
                 for chemin in ["/"] + ["/" + nom for nom in GUIDES]]
     corps = "".join(f"<url><loc>{a}</loc></url>" for a in adresses)

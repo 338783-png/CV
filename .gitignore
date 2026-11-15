@@ -3,3 +3,5 @@ __pycache__/
 sortie/
 texmf-local/
 donnees/
+production.env
+*.env

@@ -11,10 +11,11 @@
   <p class="chapeau">Retrouve ton CV et ta lettre depuis n'importe quel appareil. Le compte est gratuit et facultatif.</p>
   <form id="porte-form" class="carte-espace" novalidate>
     <label>Adresse e-mail<input type="email" id="porte-email" maxlength="120" autocomplete="username" required></label>
-    <label>Mot de passe <small id="porte-aide" hidden>8 caractères au minimum</small>
+    <label id="porte-mdp-ligne">Mot de passe
       <input type="password" id="porte-mdp" minlength="8" maxlength="200" autocomplete="current-password" required></label>
     <p class="note" id="porte-info" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="{{ p }}/confidentialite">politique de confidentialité</a>).</p>
     <p id="porte-erreur" class="erreur-compte" role="alert" hidden></p>
+    <p id="porte-envoye" class="espace-message" role="status" hidden>C'est presque fini : nous venons d'envoyer un e-mail à cette adresse. Ouvre le lien qu'il contient pour choisir ton mot de passe (il est valable 24 heures). Pense à regarder dans les courriers indésirables.</p>
     <button type="submit" class="bouton principal" id="porte-valider">Se connecter</button>
     <p class="bascule" id="porte-oubli-ligne"><button type="button" class="lien" id="porte-oubli">Mot de passe oublié ?</button></p>
     <p class="bascule"><span id="porte-question">Pas encore de compte ?</span>
@@ -33,7 +34,7 @@
 
   <!-- Mot de passe oublié, étape 2 : arrivée par le lien reçu -->
   <form id="jeton-form" class="carte-espace" novalidate hidden>
-    <p>Choisis ton nouveau mot de passe. Tes autres appareils seront déconnectés.</p>
+    <p>Choisis ton mot de passe : au moins 8 caractères, et pas un mot de passe que tu utilises ailleurs. Si tu avais déjà un compte, tes autres appareils seront déconnectés.</p>
     <label>Nouveau mot de passe <small>8 caractères au minimum</small>
       <input type="password" id="jeton-mdp" minlength="8" maxlength="200" autocomplete="new-password" required></label>
     <p id="jeton-erreur" class="erreur-compte" role="alert" hidden></p>

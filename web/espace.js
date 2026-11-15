@@ -48,16 +48,19 @@ function afficherPorte() {
   $("#jeton-form").hidden = vue !== "jeton";
   $("#porte-oubli-ligne").hidden = inscription;
   if (vue !== "connexion") {
-    $("#porte-titre").textContent = vue === "oubli" ? "Mot de passe oublié" : "Nouveau mot de passe";
+    $("#porte-titre").textContent = vue === "oubli" ? "Mot de passe oublié" : "Choisis ton mot de passe";
     return;
   }
+  // Inscription : seulement l'adresse e-mail. Le mot de passe se choisit en ouvrant le lien reçu,
+  // ce qui prouve que l'adresse est bien la sienne.
   $("#porte-titre").textContent = inscription ? "Créer un compte" : "Se connecter";
-  $("#porte-valider").textContent = inscription ? "Créer mon compte" : "Se connecter";
+  $("#porte-valider").textContent = inscription ? "Recevoir le lien d'inscription" : "Se connecter";
   $("#porte-question").textContent = inscription ? "Déjà un compte ?" : "Pas encore de compte ?";
   $("#porte-bascule").textContent = inscription ? "Se connecter" : "Créer un compte";
-  $("#porte-aide").hidden = !inscription;
+  $("#porte-mdp-ligne").hidden = inscription;
   $("#porte-info").hidden = !inscription;
-  $("#porte-mdp").autocomplete = inscription ? "new-password" : "current-password";
+  $("#porte-envoye").hidden = true;
+  $("#porte-valider").hidden = false;
 }
 $("#porte-bascule").addEventListener("click", () => { inscription = !inscription; erreur("#porte-erreur", ""); afficherPorte(); });
 // ---------- Mot de passe oublié ----------
@@ -96,17 +99,29 @@ $("#jeton-form").addEventListener("submit", async e => {
   if (!r.ok) return erreur("#jeton-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
   jetonRecu = null; vue = "connexion";
   try { localStorage.removeItem(CLE_SYNCHRO); } catch { /* stockage indisponible */ }
+  if (r.corps.nouveau_compte) await envoyerLocal();   // un CV commencé sur cet appareil rejoint le compte
   await charger();
-  message("Ton mot de passe a été changé. Tes autres appareils ont été déconnectés.");
+  message(r.corps.nouveau_compte ? "Ton compte est créé. Ton CV sera enregistré automatiquement."
+                                 : "Ton mot de passe a été changé. Tes autres appareils ont été déconnectés.");
 });
 
 $("#porte-form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("#porte-email").value.trim(), mdp = $("#porte-mdp").value;
+  if (inscription) {
+    if (!email) return erreur("#porte-erreur", "Renseigne ton adresse e-mail.");
+    $("#porte-valider").disabled = true;
+    const r = await api("POST", "/inscription", { email, langue: window.LANGUE_SITE || "fr" });
+    $("#porte-valider").disabled = false;
+    if (!r.ok) return erreur("#porte-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
+    erreur("#porte-erreur", "");
+    $("#porte-envoye").hidden = false;
+    $("#porte-valider").hidden = true;
+    return;
+  }
   if (!email || !mdp) return erreur("#porte-erreur", "Renseigne ton adresse e-mail et ton mot de passe.");
-  if (inscription && mdp.length < 8) return erreur("#porte-erreur", "Le mot de passe doit contenir au moins 8 caractères.");
   $("#porte-valider").disabled = true;
-  const r = await api("POST", inscription ? "/inscription" : "/connexion", { email, mot_de_passe: mdp });
+  const r = await api("POST", "/connexion", { email, mot_de_passe: mdp });
   $("#porte-valider").disabled = false;
   $("#porte-mdp").value = "";
   if (!r.ok) return erreur("#porte-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");

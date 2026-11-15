@@ -5,3 +5,6 @@ sortie
 .git
 texmf-local
 donnees
+production.env
+*.env
+tests

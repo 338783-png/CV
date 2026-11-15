@@ -226,10 +226,11 @@
     <h2 id="compte-titre">Se connecter</h2>
     <p class="conseil" id="compte-intro">Retrouve ton CV et ta lettre depuis n'importe quel appareil.</p>
     <label>Adresse e-mail<input type="email" id="compte-email" maxlength="120" autocomplete="username" required></label>
-    <label>Mot de passe <small id="compte-aide-mdp" hidden>8 caractères au minimum</small>
+    <label id="compte-mdp-ligne">Mot de passe
       <input type="password" id="compte-mdp" minlength="8" maxlength="200" autocomplete="current-password" required></label>
     <p class="conseil" id="compte-info-inscription" hidden>En créant un compte, tu acceptes que ton CV, ta lettre et ta photo soient enregistrés sur nos serveurs pour que tu puisses les retrouver (voir la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>).</p>
     <p id="compte-erreur" class="erreur-compte" role="alert" hidden></p>
+    <p id="compte-envoye" class="conseil" role="status" hidden>C'est presque fini : nous venons d'envoyer un e-mail à cette adresse. Ouvre le lien qu'il contient pour choisir ton mot de passe (il est valable 24 heures). Ton CV reste sur cet appareil en attendant.</p>
     <button type="submit" class="bouton principal" id="compte-valider">Se connecter</button>
     <p class="bascule" id="compte-oubli-ligne"><a class="lien" href="/compte?oubli=1">Mot de passe oublié ?</a></p>
     <p class="bascule"><span id="compte-question">Pas encore de compte ?</span>

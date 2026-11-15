@@ -6,12 +6,18 @@ Règles de sécurité appliquées ici :
   - le mot de passe n'est jamais enregistré : seulement son empreinte (scrypt, salée) ;
   - chaque requête sur les données passe par l'identifiant de la session : un compte
     ne peut ni lire ni modifier les données d'un autre ;
-  - les échecs de connexion sont limités (par adresse IP et par adresse e-mail) ;
+  - les échecs de connexion sont limités par couple (adresse IP, compte) : un inconnu qui
+    tape de mauvais mots de passe ne bloque pas le vrai titulaire depuis chez lui ;
   - le cookie de session est signé, invisible pour JavaScript (HttpOnly) et n'est pas
     envoyé par les autres sites (SameSite) ;
   - les requêtes qui modifient quelque chose doivent venir de notre propre site ;
-  - mot de passe oublié : un lien à usage unique, valable 30 minutes, est envoyé par e-mail ;
-    seule son empreinte est gardée en base, et la réponse est la même que le compte existe ou non.
+  - l'adresse e-mail est toujours vérifiée : on s'inscrit en recevant un lien, et c'est en
+    l'ouvrant qu'on choisit son mot de passe. Personne ne peut donc créer un compte au nom
+    d'une adresse qui n'est pas la sienne ;
+  - inscription et mot de passe oublié répondent toujours la même chose, que l'adresse ait
+    déjà un compte ou non : le site ne révèle pas qui est inscrit ;
+  - les liens envoyés par e-mail sont à usage unique, à durée limitée, et seule leur
+    empreinte est gardée en base. Leur adresse vient de ADRESSE_SITE, jamais de la requête.
 
 Stockage : un fichier SQLite (dossier donnees/, à sauvegarder et à garder hors de Git).
 """
@@ -25,6 +31,7 @@ import sqlite3
 import threading
 import time
 from collections import defaultdict, deque
+from contextlib import contextmanager
 from datetime import timedelta
 from email.message import EmailMessage
 from pathlib import Path
@@ -43,11 +50,12 @@ DOCUMENTS_MAX = 10               # nombre de documents (un CV et sa lettre) par 
 NOM_MAX = 60
 SESSION_JOURS = 30
 LIEN_MINUTES = 30                # durée de validité d'un lien « mot de passe oublié »
+INVITATION_HEURES = 24           # durée de validité d'un lien d'inscription
 
-# Envoi des e-mails (mot de passe oublié). À définir chez l'hébergeur :
+# Envoi des e-mails (inscription, mot de passe oublié). À définir chez l'hébergeur :
 #   SMTP_HOTE, SMTP_PORT (587 par défaut), SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE,
 #   EMAIL_EXPEDITEUR (adresse affichée comme expéditeur),
-#   ADRESSE_SITE (ex. https://cv.express) : l'adresse mise dans le lien envoyé.
+#   ADRESSE_SITE (ex. https://cv.express) : l'adresse du site, mise dans les liens envoyés.
 # Sans SMTP_HOTE (en développement), le lien est écrit dans le journal du serveur au lieu d'être envoyé.
 SMTP_HOTE = os.environ.get("SMTP_HOTE", "")
 SMTP_PORT = int(os.environ.get("SMTP_PORT") or 587)
@@ -55,6 +63,8 @@ SMTP_UTILISATEUR = os.environ.get("SMTP_UTILISATEUR", "")
 SMTP_MOT_DE_PASSE = os.environ.get("SMTP_MOT_DE_PASSE", "")
 EMAIL_EXPEDITEUR = os.environ.get("EMAIL_EXPEDITEUR", "") or SMTP_UTILISATEUR
 ADRESSE_SITE = os.environ.get("ADRESSE_SITE", "").rstrip("/")
+# Production = site derrière le proxy de l'hébergeur. Les réglages de sécurité y sont obligatoires.
+PRODUCTION = os.environ.get("DERRIERE_PROXY") == "1"
 _EMAIL_OK = re.compile(r"^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$")
 
 comptes = Blueprint("comptes", __name__, url_prefix="/api/compte")
@@ -63,17 +73,62 @@ comptes = Blueprint("comptes", __name__, url_prefix="/api/compte")
 # --------------------------------------------------------------------------
 # Base de données
 # --------------------------------------------------------------------------
+@contextmanager
 def _base():
-    """Une connexion par requête : simple et sûr avec plusieurs fils d'exécution."""
+    """Une connexion par opération : validée (commit) si tout s'est bien passé, annulée
+    sinon, et TOUJOURS fermée à la fin (sans quoi les connexions s'accumulent)."""
     connexion = sqlite3.connect(BASE, timeout=10)
-    connexion.execute("PRAGMA foreign_keys = ON")
-    return connexion
+    try:
+        connexion.execute("PRAGMA foreign_keys = ON")
+        with connexion:
+            yield connexion
+    finally:
+        connexion.close()
+
+
+def racine_site():
+    """Adresse publique du site, sans « / » final. En production, toujours ADRESSE_SITE :
+    jamais l'en-tête Host de la requête, qu'un attaquant peut choisir."""
+    return ADRESSE_SITE or request.url_root.rstrip("/")
+
+
+def _verifier_configuration():
+    """En production, refuse de démarrer si un réglage de sécurité manque."""
+    if not PRODUCTION:
+        return
+    manquants = []
+    if not ADRESSE_SITE.startswith("https://"):
+        manquants.append("ADRESSE_SITE (l'adresse du site en https, ex. https://cv.express)")
+    if len(os.environ.get("CLE_SECRETE", "")) < 32:
+        manquants.append("CLE_SECRETE (au moins 32 caractères aléatoires)")
+    if not SMTP_HOTE or not EMAIL_EXPEDITEUR:
+        manquants.append("SMTP_HOTE et EMAIL_EXPEDITEUR (envoi des e-mails d'inscription)")
+    if manquants:
+        raise RuntimeError("Réglages de production manquants : " + " ; ".join(manquants))
+
+
+def _creer_secret(fichier):
+    """Crée le fichier de clé d'un seul coup, lisible uniquement par le serveur (0600)."""
+    try:
+        descripteur = os.open(fichier, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return
+    with os.fdopen(descripteur, "w") as f:
+        f.write(secrets.token_hex(32))
 
 
 def initialiser(app):
     """À appeler une fois au démarrage : crée le dossier, la base et la clé de session."""
+    _verifier_configuration()
+    # Tout fichier créé ensuite par le serveur (base, journal -wal/-shm, clé) n'est lisible
+    # que par lui : ni les autres comptes de la machine, ni les autres conteneurs.
+    os.umask(0o077)
     DOSSIER.mkdir(parents=True, exist_ok=True)
-    os.chmod(DOSSIER, 0o700)          # lisible uniquement par l'utilisateur du serveur
+    os.chmod(DOSSIER, 0o700)
+    if PRODUCTION:
+        # Seules les requêtes adressées au vrai nom du site sont acceptées (plus localhost,
+        # pour le contrôle de santé du conteneur).
+        app.config["TRUSTED_HOSTS"] = [urlsplit(ADRESSE_SITE).hostname, "localhost", "127.0.0.1"]
     with _base() as b:
         b.execute("PRAGMA journal_mode = WAL")
         b.execute("""CREATE TABLE IF NOT EXISTS comptes (
@@ -96,21 +151,31 @@ def initialiser(app):
             compte_id INTEGER PRIMARY KEY REFERENCES comptes(id) ON DELETE CASCADE,
             empreinte TEXT NOT NULL,
             expire_le INTEGER NOT NULL)""")
+        # Liens d'inscription : le compte n'est créé qu'à l'ouverture du lien, ce qui prouve
+        # que l'adresse appartient bien à la personne.
+        b.execute("""CREATE TABLE IF NOT EXISTS invitations (
+            email     TEXT PRIMARY KEY,
+            empreinte TEXT NOT NULL,
+            expire_le INTEGER NOT NULL)""")
+        maintenant = int(time.time())
+        b.execute("DELETE FROM invitations WHERE expire_le < ?", (maintenant,))
+        b.execute("DELETE FROM reinitialisations WHERE expire_le < ?", (maintenant,))
         # Ancienne table (un seul CV par compte) : son contenu devient le premier document.
         if b.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'donnees'").fetchone():
             b.execute("""INSERT INTO documents (compte_id, nom, contenu, modifie_le)
                          SELECT compte_id, 'Mon CV', contenu, modifie_le FROM donnees""")
             b.execute("DROP TABLE donnees")
-    os.chmod(BASE, 0o600)
+    for fichier in DOSSIER.glob("comptes.sqlite3*"):     # base et ses fichiers -wal / -shm
+        os.chmod(fichier, 0o600)
 
-    # Clé qui signe les cookies de session. En production : variable CLE_SECRETE.
-    # Sinon on en fabrique une, gardée dans donnees/ pour survivre aux redémarrages.
+    # Clé qui signe les cookies de session. En production : variable CLE_SECRETE (obligatoire),
+    # gardée hors du dossier des données et donc hors des sauvegardes.
+    # En développement, on en fabrique une dans donnees/ pour survivre aux redémarrages.
     cle = os.environ.get("CLE_SECRETE", "")
     if len(cle) < 32:
         fichier = DOSSIER / "cle_secrete"
-        if not fichier.exists():
-            fichier.touch(mode=0o600)
-            fichier.write_text(secrets.token_hex(32))
+        _creer_secret(fichier)
+        os.chmod(fichier, 0o600)
         cle = fichier.read_text().strip()
     app.secret_key = cle
     app.config.update(
@@ -127,12 +192,17 @@ def initialiser(app):
 # --------------------------------------------------------------------------
 # Protections
 # --------------------------------------------------------------------------
-# Mots de passe essayés au hasard : on compte les ÉCHECS sur un quart d'heure, à la fois
-# par adresse e-mail visée (8 au plus) et par adresse IP (20 au plus : derrière une même
-# adresse, cybercafé ou école, il y a plusieurs personnes). Les réussites ne comptent pas.
-# Les créations de compte sont limitées de la même façon (10 par adresse IP).
+# Mots de passe essayés au hasard : on compte les ÉCHECS sur un quart d'heure.
+#   - « paire » (adresse IP, compte visé) : 8 au plus. C'est la limite qui arrête un attaquant,
+#     sans gêner le vrai titulaire, qui se connecte depuis une autre adresse IP ;
+#   - « ip » : 20 au plus (derrière une même adresse, cybercafé ou école, il y a plusieurs personnes) ;
+#   - « email » : 100 au plus, toutes adresses IP confondues. Très haute exprès : sinon n'importe
+#     qui pourrait bloquer le compte de quelqu'un d'autre. Au-delà, le lien « mot de passe
+#     oublié » reste disponible et lève le blocage.
+# Les réussites ne comptent pas. Les e-mails envoyés (inscription, mot de passe oublié) sont
+# limités par adresse visée et par adresse IP, pour qu'on ne puisse pas inonder une boîte.
 FENETRE_S = 15 * 60
-LIMITES = {"email": 8, "ip": 20, "inscription": 10, "oubli_email": 3, "oubli_ip": 6, "jeton_ip": 10}
+LIMITES = {"paire": 8, "ip": 20, "email": 100, "lien_email": 3, "lien_ip": 10, "jeton_ip": 10}
 _echecs = defaultdict(deque)
 _verrou = threading.Lock()
 
@@ -240,38 +310,27 @@ def etat():
                    modifie_le=sauvegarde[0] if sauvegarde else None)
 
 
+def _cles_echec(email):
+    """Compteurs d'échecs d'une tentative de mot de passe sur ce compte, depuis cette adresse IP."""
+    ip = request.remote_addr
+    return (("paire", (ip, email)), ("ip", ip), ("email", email))
+
+
 @comptes.post("/inscription")
 def inscription():
-    email, mdp = _identifiants()
-    limite = ("inscription", request.remote_addr)
-    if _bloque(limite):
-        return jsonify(erreur="Trop de comptes créés depuis cette connexion. Réessaie dans un quart d'heure."), 429
-    if not _EMAIL_OK.match(email):
-        return jsonify(erreur="Adresse e-mail invalide."), 400
-    if not MDP_MIN <= len(mdp) <= MDP_MAX:
-        return jsonify(erreur=f"Le mot de passe doit contenir au moins {MDP_MIN} caractères."), 400
-    if mdp.lower() in (email, email.split("@")[0]):
-        return jsonify(erreur="Choisis un mot de passe différent de ton adresse e-mail."), 400
-    jeton, maintenant = secrets.token_hex(16), int(time.time())
-    try:
-        with _base() as b:
-            curseur = b.execute(
-                "INSERT INTO comptes (email, empreinte, jeton, cree_le, vu_le) VALUES (?, ?, ?, ?, ?)",
-                (email, generate_password_hash(mdp), jeton, maintenant, maintenant))
-    except sqlite3.IntegrityError:
-        _noter(limite)
-        return jsonify(erreur="Un compte existe déjà avec cette adresse. Connecte-toi."), 409
-    _noter(limite)
-    _ouvrir_session(curseur.lastrowid, jeton)
-    return jsonify(connecte=True, email=email), 201
+    """Inscription en deux temps : ici on envoie un lien à l'adresse indiquée ; c'est en
+    l'ouvrant qu'on choisit son mot de passe et que le compte est créé (/nouveau-mot-de-passe).
+    La réponse est la même que l'adresse ait déjà un compte ou non."""
+    return _envoyer_un_lien("inscription")
 
 
 @comptes.post("/connexion")
 def connexion():
     email, mdp = _identifiants()
-    cles = (("ip", request.remote_addr), ("email", email))
+    cles = _cles_echec(email)
     if _bloque(*cles):
-        return jsonify(erreur="Trop de tentatives. Réessaie dans un quart d'heure."), 429
+        return jsonify(erreur="Trop de tentatives. Réessaie dans un quart d'heure, "
+                              "ou choisis un nouveau mot de passe avec « Mot de passe oublié »."), 429
     with _base() as b:
         ligne = b.execute("SELECT id, empreinte, jeton FROM comptes WHERE email = ?", (email,)).fetchone()
     correct = check_password_hash(ligne[1] if ligne else _EMPREINTE_BIDON, mdp[:MDP_MAX])
@@ -279,7 +338,7 @@ def connexion():
         # Même message dans les deux cas : on ne dit pas si l'adresse a un compte.
         _noter(*cles)
         return jsonify(erreur="Adresse e-mail ou mot de passe incorrect."), 401
-    _oublier(("email", email))
+    _oublier(cles[0])                # les échecs de CETTE adresse IP sur ce compte sont effacés
     with _base() as b:
         b.execute("UPDATE comptes SET vu_le = ? WHERE id = ?", (int(time.time()), ligne[0]))
     _ouvrir_session(ligne[0], ligne[2])
@@ -292,7 +351,7 @@ def changer_mot_de_passe():
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
-    cles = (("ip", request.remote_addr), ("email", compte[1]))
+    cles = _cles_echec(compte[1])
     if _bloque(*cles):
         return jsonify(erreur="Trop de tentatives. Réessaie dans un quart d'heure."), 429
     corps = _corps()
@@ -318,37 +377,78 @@ def changer_mot_de_passe():
 
 
 # --------------------------------------------------------------------------
-# Mot de passe oublié
+# Liens envoyés par e-mail : inscription et mot de passe oublié
 # --------------------------------------------------------------------------
-_TEXTES_OUBLI = {
-    "fr": ("CV.express : choisis un nouveau mot de passe",
-           "Bonjour,\n\nTu as demandé à changer le mot de passe de ton compte CV.express.\n"
-           "Ouvre ce lien pour en choisir un nouveau (valable {minutes} minutes, utilisable une seule fois) :\n\n{lien}\n\n"
-           "Si tu n'es pas à l'origine de cette demande, ignore ce message : ton mot de passe ne change pas.\n\nCV.express\n"),
-    "en": ("CV.express: choose a new password",
-           "Hello,\n\nYou asked to change the password of your CV.express account.\n"
-           "Open this link to choose a new one (valid for {minutes} minutes, usable only once):\n\n{lien}\n\n"
-           "If you did not make this request, ignore this message: your password does not change.\n\nCV.express\n"),
-    "it": ("CV.express: scegli una nuova password",
-           "Ciao,\n\nHai chiesto di cambiare la password del tuo account CV.express.\n"
-           "Apri questo link per sceglierne una nuova (valido {minutes} minuti, utilizzabile una sola volta):\n\n{lien}\n\n"
-           "Se non hai fatto tu questa richiesta, ignora questo messaggio: la tua password non cambia.\n\nCV.express\n"),
+# Trois messages possibles, dans la langue du site :
+#   - « invitation » : l'adresse n'a pas de compte -> lien pour choisir son mot de passe et créer le compte ;
+#   - « deja »       : on demande à s'inscrire avec une adresse qui a déjà un compte -> on le dit
+#                      à son titulaire (et à lui seul), avec un lien pour changer de mot de passe ;
+#   - « oubli »      : mot de passe oublié -> lien pour en choisir un nouveau.
+_TEXTES = {
+    "invitation": {
+        "fr": ("CV.express : confirme ton adresse",
+               "Bonjour,\n\nPour créer ton compte CV.express, ouvre ce lien et choisis ton mot de passe "
+               "(valable {duree}, utilisable une seule fois) :\n\n{lien}\n\n"
+               "Si tu n'as pas demandé à créer de compte, ignore ce message : aucun compte ne sera créé.\n\nCV.express\n"),
+        "en": ("CV.express: confirm your address",
+               "Hello,\n\nTo create your CV.express account, open this link and choose your password "
+               "(valid for {duree}, usable only once):\n\n{lien}\n\n"
+               "If you did not ask to create an account, ignore this message: no account will be created.\n\nCV.express\n"),
+        "it": ("CV.express: conferma il tuo indirizzo",
+               "Ciao,\n\nPer creare il tuo account CV.express, apri questo link e scegli la tua password "
+               "(valido {duree}, utilizzabile una sola volta):\n\n{lien}\n\n"
+               "Se non hai chiesto di creare un account, ignora questo messaggio: nessun account verrà creato.\n\nCV.express\n"),
+    },
+    "deja": {
+        "fr": ("CV.express : tu as déjà un compte",
+               "Bonjour,\n\nQuelqu'un (sans doute toi) a demandé à créer un compte CV.express avec cette adresse. "
+               "Tu as déjà un compte : connecte-toi simplement avec ton mot de passe.\n\n"
+               "Si tu l'as oublié, ce lien te permet d'en choisir un nouveau (valable {duree}, utilisable une seule fois) :\n\n{lien}\n\n"
+               "Si tu n'es pas à l'origine de cette demande, ignore ce message : rien ne change.\n\nCV.express\n"),
+        "en": ("CV.express: you already have an account",
+               "Hello,\n\nSomeone (probably you) asked to create a CV.express account with this address. "
+               "You already have an account: just log in with your password.\n\n"
+               "If you have forgotten it, this link lets you choose a new one (valid for {duree}, usable only once):\n\n{lien}\n\n"
+               "If you did not make this request, ignore this message: nothing changes.\n\nCV.express\n"),
+        "it": ("CV.express: hai già un account",
+               "Ciao,\n\nQualcuno (probabilmente tu) ha chiesto di creare un account CV.express con questo indirizzo. "
+               "Hai già un account: accedi semplicemente con la tua password.\n\n"
+               "Se l'hai dimenticata, questo link ti permette di sceglierne una nuova (valido {duree}, utilizzabile una sola volta):\n\n{lien}\n\n"
+               "Se non hai fatto tu questa richiesta, ignora questo messaggio: non cambia nulla.\n\nCV.express\n"),
+    },
+    "oubli": {
+        "fr": ("CV.express : choisis un nouveau mot de passe",
+               "Bonjour,\n\nTu as demandé à changer le mot de passe de ton compte CV.express.\n"
+               "Ouvre ce lien pour en choisir un nouveau (valable {duree}, utilisable une seule fois) :\n\n{lien}\n\n"
+               "Si tu n'es pas à l'origine de cette demande, ignore ce message : ton mot de passe ne change pas.\n\nCV.express\n"),
+        "en": ("CV.express: choose a new password",
+               "Hello,\n\nYou asked to change the password of your CV.express account.\n"
+               "Open this link to choose a new one (valid for {duree}, usable only once):\n\n{lien}\n\n"
+               "If you did not make this request, ignore this message: your password does not change.\n\nCV.express\n"),
+        "it": ("CV.express: scegli una nuova password",
+               "Ciao,\n\nHai chiesto di cambiare la password del tuo account CV.express.\n"
+               "Apri questo link per sceglierne una nuova (valido {duree}, utilizzabile una sola volta):\n\n{lien}\n\n"
+               "Se non hai fatto tu questa richiesta, ignora questo messaggio: la tua password non cambia.\n\nCV.express\n"),
+    },
 }
+_DUREES = {"fr": ("{} minutes", "{} heures"), "en": ("{} minutes", "{} hours"), "it": ("{} minuti", "{} ore")}
 
 
 def _empreinte_jeton(jeton):
     return hashlib.sha256(jeton.encode("utf-8")).hexdigest()
 
 
-def _envoyer_lien(email, lien, langue, journal):
+def _envoyer_lien(email, genre, langue, lien, journal):
     """Envoie l'e-mail (dans un fil à part : la réponse au visiteur ne dépend pas de sa durée)."""
-    sujet, corps = _TEXTES_OUBLI.get(langue, _TEXTES_OUBLI["fr"])
+    sujet, corps = _TEXTES[genre][langue]
+    minutes, heures = _DUREES[langue]
+    duree = heures.format(INVITATION_HEURES) if genre == "invitation" else minutes.format(LIEN_MINUTES)
     if not SMTP_HOTE:
-        journal.warning("SMTP non configuré : e-mail non envoyé. Lien de réinitialisation : %s", lien)
+        journal.warning("SMTP non configuré : e-mail non envoyé (%s). Lien : %s", genre, lien)
         return
     message = EmailMessage()
     message["Subject"], message["From"], message["To"] = sujet, EMAIL_EXPEDITEUR, email
-    message.set_content(corps.format(lien=lien, minutes=LIEN_MINUTES))
+    message.set_content(corps.format(lien=lien, duree=duree))
     try:
         if SMTP_PORT == 465:
             serveur = smtplib.SMTP_SSL(SMTP_HOTE, SMTP_PORT, timeout=20)
@@ -360,44 +460,62 @@ def _envoyer_lien(email, lien, langue, journal):
                 serveur.login(SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE)
             serveur.send_message(message)
     except (OSError, smtplib.SMTPException) as e:
-        journal.error("Envoi de l'e-mail de réinitialisation impossible : %s", type(e).__name__)
+        journal.error("Envoi d'un e-mail (%s) impossible : %s", genre, type(e).__name__)
 
 
-@comptes.post("/mot-de-passe-oublie")
-def mot_de_passe_oublie():
-    """Envoie un lien de réinitialisation. La réponse est TOUJOURS la même, que l'adresse
-    ait un compte ou non : on ne révèle pas qui est inscrit."""
+def _envoyer_un_lien(demande):
+    """Inscription ou mot de passe oublié. La réponse est TOUJOURS la même, que l'adresse
+    ait un compte ou non, et le travail fait est le même (un jeton, une écriture en base,
+    un e-mail) : ni le message ni la durée de la réponse ne révèlent qui est inscrit."""
     corps = _corps()
     email = corps.get("email")
     email = email.strip().lower()[:120] if isinstance(email, str) else ""
-    langue = corps.get("langue") if corps.get("langue") in _TEXTES_OUBLI else "fr"
-    cles = (("oubli_ip", request.remote_addr), ("oubli_email", email))
+    langue = corps.get("langue") if corps.get("langue") in _DUREES else "fr"
+    cles = (("lien_ip", request.remote_addr), ("lien_email", email))
     if _bloque(*cles):
         return jsonify(erreur="Trop de demandes. Réessaie dans un quart d'heure."), 429
     if not _EMAIL_OK.match(email):
         return jsonify(erreur="Adresse e-mail invalide."), 400
     _noter(*cles)
+    jeton = secrets.token_urlsafe(32)
+    maintenant = int(time.time())
     with _base() as b:
         ligne = b.execute("SELECT id FROM comptes WHERE email = ?", (email,)).fetchone()
         if ligne:
-            jeton = secrets.token_urlsafe(32)
-            # Un seul lien valable par compte : le nouveau remplace le précédent.
+            # Adresse déjà inscrite : un lien pour changer de mot de passe, envoyé à elle seule.
+            genre = "oubli" if demande == "oubli" else "deja"
             b.execute("""INSERT INTO reinitialisations (compte_id, empreinte, expire_le) VALUES (?, ?, ?)
                          ON CONFLICT(compte_id) DO UPDATE SET empreinte = excluded.empreinte,
                                                               expire_le = excluded.expire_le""",
-                      (ligne[0], _empreinte_jeton(jeton), int(time.time()) + LIEN_MINUTES * 60))
-            # L'adresse du site vient de la configuration (ADRESSE_SITE), pas de la requête :
-            # sinon un attaquant pourrait faire envoyer un lien pointant vers son propre site.
-            racine = ADRESSE_SITE or request.url_root.rstrip("/")
-            prefixe = {"en": "/en", "it": "/it"}.get(langue, "")
-            lien = f"{racine}{prefixe}/compte?jeton={jeton}"
-            threading.Thread(target=_envoyer_lien, args=(email, lien, langue, current_app.logger), daemon=True).start()
-    return jsonify(envoye=True)
+                      (ligne[0], _empreinte_jeton(jeton), maintenant + LIEN_MINUTES * 60))
+        elif demande == "inscription":
+            genre = "invitation"
+            b.execute("""INSERT INTO invitations (email, empreinte, expire_le) VALUES (?, ?, ?)
+                         ON CONFLICT(email) DO UPDATE SET empreinte = excluded.empreinte,
+                                                          expire_le = excluded.expire_le""",
+                      (email, _empreinte_jeton(jeton), maintenant + INVITATION_HEURES * 3600))
+        else:
+            # Mot de passe oublié pour une adresse inconnue : aucun e-mail, mais une écriture
+            # équivalente, pour que la durée de la réponse soit la même.
+            genre = None
+            b.execute("DELETE FROM invitations WHERE expire_le < ?", (maintenant,))
+    if genre:
+        prefixe = {"en": "/en", "it": "/it"}.get(langue, "")
+        lien = f"{racine_site()}{prefixe}/compte?jeton={jeton}"
+        threading.Thread(target=_envoyer_lien, args=(email, genre, langue, lien, current_app.logger),
+                         daemon=True).start()
+    return jsonify(envoye=True), 202 if demande == "inscription" else 200
+
+
+@comptes.post("/mot-de-passe-oublie")
+def mot_de_passe_oublie():
+    return _envoyer_un_lien("oubli")
 
 
 @comptes.post("/nouveau-mot-de-passe")
 def nouveau_mot_de_passe():
-    """Deuxième étape : le jeton reçu par e-mail + le nouveau mot de passe."""
+    """Deuxième étape, commune à l'inscription et au mot de passe oublié : le jeton reçu
+    par e-mail + le mot de passe choisi. Le lien prouve que la personne lit cette adresse."""
     corps = _corps()
     jeton, nouveau = corps.get("jeton"), corps.get("mot_de_passe")
     limite = ("jeton_ip", request.remote_addr)
@@ -407,29 +525,42 @@ def nouveau_mot_de_passe():
     if not isinstance(jeton, str) or not 20 <= len(jeton) <= 200:
         _noter(limite)
         return invalide
+    empreinte, maintenant = _empreinte_jeton(jeton), int(time.time())
     with _base() as b:
-        ligne = b.execute("""SELECT c.id, c.email FROM reinitialisations r JOIN comptes c ON c.id = r.compte_id
-                             WHERE r.empreinte = ? AND r.expire_le >= ?""",
-                          (_empreinte_jeton(jeton), int(time.time()))).fetchone()
+        ligne = b.execute("""SELECT c.email FROM reinitialisations r JOIN comptes c ON c.id = r.compte_id
+                             WHERE r.empreinte = ? AND r.expire_le >= ?""", (empreinte, maintenant)).fetchone()
+        if not ligne:
+            ligne = b.execute("SELECT email FROM invitations WHERE empreinte = ? AND expire_le >= ?",
+                              (empreinte, maintenant)).fetchone()
     if not ligne:
         _noter(limite)
         return invalide
+    email = ligne[0]
     if not isinstance(nouveau, str) or not MDP_MIN <= len(nouveau) <= MDP_MAX:
         return jsonify(erreur=f"Le mot de passe doit contenir au moins {MDP_MIN} caractères."), 400
-    if nouveau.lower() in (ligne[1], ligne[1].split("@")[0]):
+    if nouveau.lower() in (email, email.split("@")[0]):
         return jsonify(erreur="Choisis un mot de passe différent de ton adresse e-mail."), 400
     session_jeton = secrets.token_hex(16)        # toutes les sessions ouvertes cessent d'être valables
+    empreinte_mdp = generate_password_hash(nouveau)
     with _base() as b:
-        # Le lien ne sert qu'une fois : on le supprime dans la même opération que le changement.
-        utilises = b.execute("DELETE FROM reinitialisations WHERE compte_id = ? AND empreinte = ?",
-                             (ligne[0], _empreinte_jeton(jeton))).rowcount
+        # Le lien ne sert qu'une fois : il est supprimé dans la même opération que le changement.
+        utilises = (b.execute("""DELETE FROM reinitialisations WHERE empreinte = ?
+                                 AND compte_id = (SELECT id FROM comptes WHERE email = ?)""", (empreinte, email)).rowcount
+                    + b.execute("DELETE FROM invitations WHERE empreinte = ? AND email = ?", (empreinte, email)).rowcount)
         if not utilises:
             return invalide
-        b.execute("UPDATE comptes SET empreinte = ?, jeton = ?, vu_le = ? WHERE id = ?",
-                  (generate_password_hash(nouveau), session_jeton, int(time.time()), ligne[0]))
-    _oublier(("email", ligne[1]))                # les anciens échecs de connexion ne bloquent plus
-    _ouvrir_session(ligne[0], session_jeton)
-    return jsonify(connecte=True, email=ligne[1])
+        compte = b.execute("SELECT id FROM comptes WHERE email = ?", (email,)).fetchone()
+        if compte:
+            b.execute("UPDATE comptes SET empreinte = ?, jeton = ?, vu_le = ? WHERE id = ?",
+                      (empreinte_mdp, session_jeton, maintenant, compte[0]))
+            cid, nouveau_compte = compte[0], False
+        else:
+            cid = b.execute("INSERT INTO comptes (email, empreinte, jeton, cree_le, vu_le) VALUES (?, ?, ?, ?, ?)",
+                            (email, empreinte_mdp, session_jeton, maintenant, maintenant)).lastrowid
+            nouveau_compte = True
+    _oublier(("email", email))                   # le titulaire a prouvé qui il est : plus de blocage global
+    _ouvrir_session(cid, session_jeton)
+    return jsonify(connecte=True, email=email, nouveau_compte=nouveau_compte)
 
 
 @comptes.post("/deconnexion")
@@ -614,7 +745,7 @@ def supprimer():
     compte = compte_connecte()
     if not compte:
         return _non_connecte()
-    cles = (("ip", request.remote_addr), ("email", compte[1]))
+    cles = _cles_echec(compte[1])
     if _bloque(*cles):
         return jsonify(erreur="Trop de tentatives. Réessaie dans un quart d'heure."), 429
     mdp = _corps().get("mot_de_passe")
@@ -625,7 +756,7 @@ def supprimer():
         return jsonify(erreur="Mot de passe incorrect."), 401
     with _base() as b:
         b.execute("DELETE FROM comptes WHERE id = ?", (compte[0],))   # les documents suivent (CASCADE)
-    _oublier(("email", compte[1]))
+    _oublier(*cles[::2])             # échecs de ce compte (paire et global), pas ceux de l'adresse IP
     session.clear()
     current_app.logger.info("Compte supprimé.")       # sans l'adresse : rien de personnel dans les journaux
     return jsonify(connecte=False)

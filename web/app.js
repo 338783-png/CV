@@ -810,13 +810,15 @@ function afficherCompte(message) {
   $("#compte-qui").textContent = compte.email || "";
   if (message !== undefined) $("#compte-synchro").textContent = message;
   $("#compte-titre").textContent = modeInscription ? "Créer un compte" : "Se connecter";
-  $("#compte-valider").textContent = modeInscription ? "Créer mon compte" : "Se connecter";
+  $("#compte-valider").textContent = modeInscription ? "Recevoir le lien d'inscription" : "Se connecter";
   $("#compte-question").textContent = modeInscription ? "Déjà un compte ?" : "Pas encore de compte ?";
   $("#compte-bascule").textContent = modeInscription ? "Se connecter" : "Créer un compte";
-  $("#compte-aide-mdp").hidden = !modeInscription;
+  // Inscription : l'adresse seulement ; le mot de passe se choisit en ouvrant le lien reçu.
+  $("#compte-mdp-ligne").hidden = modeInscription;
   $("#compte-info-inscription").hidden = !modeInscription;
   $("#compte-oubli-ligne").hidden = modeInscription;
-  $("#compte-mdp").autocomplete = modeInscription ? "new-password" : "current-password";
+  $("#compte-envoye").hidden = true;
+  $("#compte-valider").hidden = false;
 }
 
 function erreurCompte(sel, message) {
@@ -931,10 +933,20 @@ $("#compte-bascule").addEventListener("click", () => {
 $("#compte-form").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("#compte-email").value.trim(), mdp = $("#compte-mdp").value;
+  if (modeInscription) {
+    if (!email) return erreurCompte("#compte-erreur", "Renseigne ton adresse e-mail.");
+    $("#compte-valider").disabled = true;
+    const r = await api("POST", "/inscription", { email, langue: LANGUE_SITE });
+    $("#compte-valider").disabled = false;
+    if (!r.ok) return erreurCompte("#compte-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");
+    erreurCompte("#compte-erreur", "");
+    $("#compte-envoye").hidden = false;
+    $("#compte-valider").hidden = true;
+    return;
+  }
   if (!email || !mdp) return erreurCompte("#compte-erreur", "Renseigne ton adresse e-mail et ton mot de passe.");
-  if (modeInscription && mdp.length < 8) return erreurCompte("#compte-erreur", "Le mot de passe doit contenir au moins 8 caractères.");
   $("#compte-valider").disabled = true;
-  const r = await api("POST", modeInscription ? "/inscription" : "/connexion", { email, mot_de_passe: mdp });
+  const r = await api("POST", "/connexion", { email, mot_de_passe: mdp });
   $("#compte-valider").disabled = false;
   $("#compte-mdp").value = "";
   if (!r.ok) return erreurCompte("#compte-erreur", r.corps.erreur || "Une erreur est survenue. Réessaie.");

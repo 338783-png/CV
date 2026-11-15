@@ -1,6 +1,7 @@
 # Image du site : Python + LaTeX + poppler (aperçus).
 # Construire :  docker build -t cv-saas .
-# Lancer     :  docker run -p 8000:8000 -e DERRIERE_PROXY=1 -e CLE_SECRETE=… -v cv-donnees:/donnees cv-saas
+# Lancer     :  docker run -p 8000:8000 --env-file production.env -v cv-donnees:/donnees cv-saas
+#               (production.env : DERRIERE_PROXY=1, ADRESSE_SITE, CLE_SECRETE, SMTP_… ; voir plus bas)
 FROM python:3.12-slim
 
 # LaTeX : uniquement les paquets utilisés par les modèles (templates/).
@@ -24,9 +25,13 @@ RUN useradd --create-home site
 
 # Comptes utilisateurs : la base de données vit dans /donnees. Monter un volume à cet
 # endroit (docker run -v cv-donnees:/donnees …), sinon les comptes disparaissent à chaque
-# mise à jour du site. CLE_SECRETE (32 caractères ou plus) signe les cookies de session.
-# Mot de passe oublié : SMTP_HOTE, SMTP_PORT, SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE, EMAIL_EXPEDITEUR
-# et ADRESSE_SITE (ex. https://cv.express) ; voir le début de comptes.py.
+# mise à jour du site.
+# Avec DERRIERE_PROXY=1 (production), le serveur REFUSE DE DÉMARRER sans :
+#   ADRESSE_SITE   l'adresse publique en https (ex. https://cv.express) ;
+#   CLE_SECRETE    32 caractères aléatoires ou plus (signe les cookies de session) ;
+#   SMTP_HOTE et EMAIL_EXPEDITEUR (+ SMTP_PORT, SMTP_UTILISATEUR, SMTP_MOT_DE_PASSE) :
+#                  envoi des e-mails d'inscription et de mot de passe oublié.
+# Voir le début de comptes.py.
 RUN mkdir /donnees && chown site /donnees
 ENV DOSSIER_DONNEES=/donnees
 VOLUME /donnees
