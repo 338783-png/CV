@@ -46,3 +46,16 @@ Restaurer une sauvegarde :
    `comptes.sqlite3-wal` et `comptes.sqlite3-shm` s'ils existent ;
 3. vérifier que le fichier appartient à l'utilisateur du serveur, avec les droits 600 ;
 4. relancer le serveur.
+
+## Déployer sur Render
+
+1. Pousser le dépôt sur GitHub (`git push`).
+2. Sur render.com : **New > Blueprint**, choisir le dépôt. Render lit `render.yaml`
+   (service Docker, disque de 1 Go monté sur `/donnees`, `CLE_SECRETE` générée).
+3. Remplir les valeurs demandées : `ADRESSE_SITE` (par exemple
+   `https://cv-express.onrender.com`) et les réglages SMTP du service d'e-mails.
+4. Propre domaine : l'ajouter dans **Settings > Custom Domains**, puis mettre
+   `ADRESSE_SITE` à `https://ce-domaine`.
+
+Le plan gratuit ne convient pas : pas de disque (les comptes disparaissent à chaque
+redémarrage) et l'envoi d'e-mails par SMTP y est bloqué.

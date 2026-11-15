@@ -130,7 +130,11 @@ def initialiser(app):
     if PRODUCTION:
         # Seules les requêtes adressées au vrai nom du site sont acceptées (plus localhost,
         # pour le contrôle de santé du conteneur).
-        app.config["TRUSTED_HOSTS"] = [urlsplit(ADRESSE_SITE).hostname, "localhost", "127.0.0.1"]
+        noms = [urlsplit(ADRESSE_SITE).hostname, "localhost", "127.0.0.1"]
+        # Render donne aussi au service une adresse en .onrender.com (contrôle de santé).
+        if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+            noms.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
+        app.config["TRUSTED_HOSTS"] = noms
     with _base() as b:
         b.execute("PRAGMA journal_mode = WAL")
         b.execute("""CREATE TABLE IF NOT EXISTS comptes (

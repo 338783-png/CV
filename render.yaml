@@ -1,0 +1,30 @@
+# Déploiement sur Render (https://render.com) : New > Blueprint > choisir ce dépôt.
+# Les valeurs marquées sync: false sont demandées par Render lors de la création.
+services:
+  - type: web
+    name: cv-express
+    runtime: docker
+    plan: starter            # le plan gratuit n'a ni disque (comptes perdus) ni envoi d'e-mails
+    region: frankfurt
+    healthCheckPath: /
+    disk:
+      name: donnees
+      mountPath: /donnees    # base des comptes et sauvegardes
+      sizeGB: 1
+    envVars:
+      - key: DERRIERE_PROXY
+        value: "1"
+      - key: CLE_SECRETE
+        generateValue: true  # chaîne aléatoire créée une fois par Render
+      - key: ADRESSE_SITE    # ex. https://cv-express.onrender.com, ou ton propre domaine
+        sync: false
+      - key: SMTP_HOTE       # ex. smtp-relay.brevo.com
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_UTILISATEUR
+        sync: false
+      - key: SMTP_MOT_DE_PASSE
+        sync: false
+      - key: EMAIL_EXPEDITEUR  # ex. CV.express <bonjour@ton-domaine>
+        sync: false
